@@ -1,0 +1,10 @@
+module Gnome
+  module Calendar
+    module Rb
+      module Version
+        VERSION: String
+      end
+      VERSION: String
+    end
+  end
+end
