@@ -1,6 +1,72 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require "gnome_calendar"
+# Entry point for the Ruby port of GNOME Calendar.
+#
+# The options mirror upstream's src/gui/gcal-application.c:
+#
+#   -q, --quit               Quit GNOME Calendar
+#   -v, --version            Display version number
+#   -d, --date DATE          Open calendar on the passed date
+#   -u, --uuid UUID          Open calendar showing the passed event
+#
+# plus a data-directory switch, which upstream does not need because it talks
+# to Evolution Data Server.
 
-GnomeCalendar::Application.new.build.run
+require 'optparse'
+require 'time'
+
+require_relative '../lib/main'
+require_relative '../lib/manager'
+require_relative '../lib/context'
+require_relative '../lib/gnome/calendar/rb/version'
+
+options = {}
+
+OptionParser.new do |parser|
+  parser.banner = 'Usage: gnome-calendar [options]'
+
+  parser.on('-q', '--quit', 'Quit GNOME Calendar') { options[:quit] = true }
+  parser.on('-v', '--version', 'Display version number') { options[:version] = true }
+  parser.on('-d', '--date DATE', 'Open calendar on the passed date') { |date| options[:date] = date }
+  parser.on('-u', '--uuid UUID', 'Open calendar showing the passed event') { |uuid| options[:uuid] = uuid }
+  parser.on('--data-dir DIR', 'Read and write calendars under DIR') { |dir| options[:data_dir] = dir }
+  parser.on('-h', '--help', 'Show this message') do
+    puts parser
+    exit
+  end
+end.parse!
+
+if options[:version]
+  puts "gnome-calendar-rb #{Gnome::Calendar::Rb::VERSION}"
+  exit
+end
+
+# Upstream's --quit asks a running instance to quit; with nothing running
+# there is nothing to do either way.
+if options[:quit]
+  exit
+end
+
+startup_date = nil
+unless options[:date].nil?
+  begin
+    startup_date = Time.parse(options[:date])
+  rescue ArgumentError
+    warn "gnome-calendar: could not understand the date #{options[:date].inspect}"
+    exit 1
+  end
+end
+
+context = Context.new(manager: Manager.new(data_dir: options[:data_dir]))
+
+App.new(context: context, startup_date: startup_date).tap do |app|
+  # Upstream's --uuid opens the window on the event's own date.
+  unless options[:uuid].nil?
+    app.context.startup
+    event = app.context.manager.event(options[:uuid])
+    unless event.nil?
+      app.startup_date = event.date_start
+    end
+  end
+end.run([])
