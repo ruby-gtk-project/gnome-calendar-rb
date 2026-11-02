@@ -56,6 +56,7 @@ class Window
   # binds them to. The change-view entries carry their integer argument in
   # the detailed action name, as GTK's accelerator table expects.
   ACCELERATORS = {
+    'win.new-event'       => ['<Control>n'],
     'win.today'           => ['<Control>t', '<Alt>Down', 'Home'],
     'win.previous-date'   => ['<Alt>Left', 'Page_Up'],
     'win.next-date'       => ['<Alt>Right', 'Page_Down'],
@@ -184,7 +185,7 @@ class Window
       end
 
       new_event_button.tap do |button|
-        button.signal_connect('clicked') { show_quick_add(day_range(@active_date)) }
+        button.action_name = 'win.new-event'
       end
 
       win.add_breakpoint(collapse_breakpoint)
@@ -435,6 +436,7 @@ class Window
         'today'                   => -> { go_to_today },
         'next-date'               => -> { go_to_next_date },
         'previous-date'           => -> { go_to_previous_date },
+        'new-event'               => -> { show_quick_add(day_range(@active_date)) },
         'open-date-time-settings' => -> { launch_settings_panel('datetime') },
         'open-online-accounts'    => -> { launch_settings_panel('online-accounts') },
       }.each do |name, callback|
