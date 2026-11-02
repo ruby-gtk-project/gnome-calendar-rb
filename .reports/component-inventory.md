@@ -7,20 +7,43 @@ assembly in `build`).
 
 ## State of `lib/` on `ruby`
 
+The port has a working shell and its default view. `lib/` on `ruby` now holds
+36 files:
+
 ```
-lib/gnome_calendar.rb               # requires gnome_calendar/application
-lib/gnome_calendar/application.rb   # packaging stub: window + "not written yet" StatusPage
-lib/gnome/calendar/rb/version.rb    # kettle-jem version constant
+lib/main.rb                 lib/window.rb               lib/shortcuts_dialog.rb
+lib/view.rb                 lib/month_view.rb           lib/month_cell.rb
+lib/month_popover.rb        lib/agenda_view.rb          lib/agenda_view_day.rb
+lib/agenda_view_day_row.rb  lib/event_widget.rb         lib/quick_add_popover.rb
+lib/date_chooser.rb         lib/date_chooser_day.rb     lib/calendar_row.rb
+lib/calendar_list.rb        lib/sync_indicator.rb       lib/multi_choice.rb
+lib/context.rb              lib/manager.rb              lib/calendar.rb
+lib/event.rb                lib/event_list.rb           lib/event_attendee.rb
+lib/event_organizer.rb      lib/recurrence.rb           lib/range.rb
+lib/range_tree.rb           lib/clock.rb                lib/timer.rb
+lib/date_time_utils.rb      lib/utils.rb                lib/settings.rb
+lib/style.rb
+lib/gnome_calendar.rb       lib/gnome_calendar/application.rb   # packaging stubs
+lib/gnome/calendar/rb/version.rb                                # kettle-jem
 ```
 
-**Nothing user-facing exists yet.** Every component below is absent. The pilot
-port keeps the real app in flat `lib/*.rb` (`lib/main.rb` holds the `App`
-class) and leaves `lib/<gem_name>/application.rb` as the untouched packaging
-stub, so the targets below are flat `lib/*.rb`.
+18 of the 61 user-facing components exist; 16 of the supporting model, service
+and helper files exist. The week view, the whole event editor, calendar
+management, the importer, search, weather and the event popover are all still
+absent. Per-component status is in the table at the end.
 
-Upstream counts: 65 C source files under `src/`, 36 blueprint files, 1 GSettings
-schema (5 keys), 4 GResource manifests, 78 locales in `po/LINGUAS`, 71 entries
-in `po/POTFILES.in`.
+The pilot port keeps the real app in flat `lib/*.rb` (`lib/main.rb` holds the
+`App` class) and leaves `lib/<gem_name>/application.rb` as the untouched
+packaging stub, so every target below is a flat `lib/*.rb`.
+
+Upstream counts: 93 `.c` and 96 `.h` files under `src/`, 46 blueprint files,
+1 GSettings schema (5 keys), 9 GResource manifests, 78 locales in
+`po/LINGUAS`, 70 entries in `po/POTFILES.in`.
+
+Four upstream `.c` files contribute no component and are deliberately out of
+scope: `src/contrib/gdkarrayimpl.c` (a GdkArray macro instantiation),
+`src/core/gcal-global.c` and `src/core/gcal-log.c` (process init and logging),
+and `src/gui/gcal-tests.c` (an in-tree test harness hook).
 
 ---
 
@@ -280,32 +303,143 @@ Custom icons shipped in the gresource: `add-reminder-symbolic`,
 
 ---
 
+## Port status, component by component
+
+`✓` exists on `ruby`, `·` absent. Order is the order a user meets them.
+
+| # | Upstream | Target | Kind | Present |
+|---:|---|---|---|:---:|
+| 1 | `src/gui/gcal-application.c` | `lib/main.rb` | application | ✓ |
+| 2 | `src/gui/gcal-window.blp` + `.c` | `lib/window.rb` | window | ✓ |
+| 3 | `src/gui/shortcuts-dialog.blp` | `lib/shortcuts_dialog.rb` | dialog | ✓ |
+| 4 | `src/gui/common/gcal-date-chooser.blp` + `.c` | `lib/date_chooser.rb` | widget | ✓ |
+| 5 | `src/gui/common/gcal-date-chooser-day.blp` + `.c` | `lib/date_chooser_day.rb` | widget | ✓ |
+| 6 | `src/gui/common/gcal-calendar-row.blp` + `.c` | `lib/calendar_row.rb` | row | ✓ |
+| 7 | `src/gui/common/gcal-calendar-combo-row.blp` + `.c` | `lib/calendar_combo_row.rb` | row | · |
+| 8 | `src/gui/views/gcal-view.c` (+ `-private.h`) | `lib/view.rb` | interface / mixin | ✓ |
+| 9 | `src/gui/views/gcal-month-view.blp` + `.c` | `lib/month_view.rb` | view | ✓ |
+| 10 | `src/gui/views/gcal-month-view-row.c` | `lib/month_view_row.rb` | widget (code-built) | · |
+| 11 | `src/gui/views/gcal-month-cell.blp` + `.c` | `lib/month_cell.rb` | widget | ✓ |
+| 12 | `src/gui/views/gcal-month-popover.blp` + `.c` | `lib/month_popover.rb` | popover | ✓ |
+| 13 | `src/gui/views/gcal-week-view.blp` + `.c` (+ `-common.c`) | `lib/week_view.rb` | view | · |
+| 14 | `src/gui/views/gcal-week-header.blp` + `.c` | `lib/week_header.rb` | widget | · |
+| 15 | `src/gui/views/gcal-week-grid.c` | `lib/week_grid.rb` | widget (code-built) | · |
+| 16 | `src/gui/views/gcal-week-hour-bar.c` | `lib/week_hour_bar.rb` | widget (code-built) | · |
+| 17 | `src/gui/views/gcal-agenda-view.blp` + `.c` | `lib/agenda_view.rb` | view | ✓ |
+| 18 | `src/gui/views/gcal-agenda-view-day-row.blp` + `.c` | `lib/agenda_view_day_row.rb` | row | ✓ |
+| 19 | `src/gui/views/gcal-agenda-view-day.c` | `lib/agenda_view_day.rb` | model object | ✓ |
+| 20 | `src/gui/gcal-event-widget.blp` + `.c` | `lib/event_widget.rb` | widget | ✓ |
+| 21 | `src/gui/gcal-event-widget-pool.c` | `lib/event_widget_pool.rb` | helper | · |
+| 22 | `src/gui/gcal-event-popover.blp` + `.c` | `lib/event_popover.rb` | popover | · |
+| 23 | `src/gui/gcal-meeting-row.blp` + `.c` | `lib/meeting_row.rb` | row | · |
+| 24 | `src/gui/gcal-quick-add-popover.blp` + `.c` | `lib/quick_add_popover.rb` | popover | ✓ |
+| 25 | `src/gui/gcal-search-button.blp` + `.c` | `lib/search_button.rb` | widget | · |
+| 26 | `src/gui/gcal-sync-indicator.blp` + `.c` | `lib/sync_indicator.rb` | widget | ✓ |
+| 27 | `src/gui/gcal-calendar-navigation-button.blp` + `.c` | `lib/calendar_navigation_button.rb` | widget | · |
+| 28 | `src/gui/gcal-calendar-list.blp` + `.c` | `lib/calendar_list.rb` | widget | ✓ |
+| 29 | `src/gui/gcal-weather-settings.blp` + `.c` | `lib/weather_settings.rb` | menu popover content | · |
+| 30 | `src/gui/gcal-drop-overlay.c` | `lib/drop_overlay.rb` | widget (code-built) | · |
+| 31 | `src/gui/gcal-fading-label.c` | `lib/fading_label.rb` | widget (code-built) | · |
+| 32 | `src/gui/gcal-overflow-bin.c` + `-layout.c` | `lib/overflow_bin.rb` | widget + layout manager | · |
+| 33 | `src/gui/gcal-bidi.c` | `lib/bidi.rb` | helper | · |
+| 34 | `src/gui/event-editor/gcal-event-editor-dialog.blp` + `.c` | `lib/event_editor_dialog.rb` | dialog | · |
+| 35 | `src/gui/event-editor/gcal-event-editor-section.c` | `lib/event_editor_section.rb` | interface / mixin | · |
+| 36 | `src/gui/event-editor/gcal-summary-section.blp` + `.c` | `lib/summary_section.rb` | section | · |
+| 37 | `src/gui/event-editor/gcal-schedule-section.blp` + `.c` | `lib/schedule_section.rb` | section | · |
+| 38 | `src/gui/event-editor/gcal-event-schedule.c` | `lib/event_schedule.rb` | model | · |
+| 39 | `src/gui/event-editor/gcal-date-chooser-row.blp` + `.c` | `lib/date_chooser_row.rb` | row | · |
+| 40 | `src/gui/event-editor/gcal-date-time-chooser.blp` + `.c` | `lib/date_time_chooser.rb` | group | · |
+| 41 | `src/gui/event-editor/gcal-date-selector.blp` + `.c` | `lib/date_selector.rb` | widget | · |
+| 42 | `src/gui/event-editor/gcal-multi-choice.blp` + `.c` | `lib/multi_choice.rb` | widget | ✓ |
+| 43 | `src/gui/event-editor/gcal-attendees-section.blp` + `.c` | `lib/attendees_section.rb` | section | · |
+| 44 | `src/gui/event-editor/gcal-attendee-summary-row.blp` + `.c` | `lib/attendee_summary_row.rb` | row | · |
+| 45 | `src/gui/event-editor/gcal-attendee-details-page.blp` + `.c` | `lib/attendee_details_page.rb` | page | · |
+| 46 | `src/gui/event-editor/gcal-attendee-row.blp` + `.c` | `lib/attendee_row.rb` | row | · |
+| 47 | `src/gui/event-editor/gcal-organizer-row.blp` + `.c` | `lib/organizer_row.rb` | row | · |
+| 48 | `src/gui/event-editor/gcal-reminders-section.blp` + `.c` | `lib/reminders_section.rb` | section | · |
+| 49 | `src/gui/event-editor/gcal-alarm-row.blp` + `.c` | `lib/alarm_row.rb` | row | · |
+| 50 | `src/gui/event-editor/gcal-notes-section.blp` + `.c` | `lib/notes_section.rb` | section | · |
+| 51 | `src/gui/event-editor/gcal-time-zone-dialog.blp` + `.c` | `lib/time_zone_dialog.rb` | dialog | · |
+| 52 | `src/gui/event-editor/gcal-time-zone-dialog-row.blp` + `.c` | `lib/time_zone_dialog_row.rb` | row | · |
+| 53 | `src/gui/calendar-management/gcal-calendar-management-dialog.blp` + `.c` | `lib/calendar_management_dialog.rb` | dialog | · |
+| 54 | `src/gui/calendar-management/gcal-calendar-management-page.c` | `lib/calendar_management_page.rb` | interface / mixin | · |
+| 55 | `src/gui/calendar-management/gcal-calendars-page.blp` + `.c` | `lib/calendars_page.rb` | page | · |
+| 56 | `src/gui/calendar-management/calendar-row.blp` | `lib/calendar_management_row.rb` | row | · |
+| 57 | `src/gui/calendar-management/gcal-edit-calendar-page.blp` + `.c` | `lib/edit_calendar_page.rb` | page | · |
+| 58 | `src/gui/calendar-management/gcal-new-calendar-page.blp` + `.c` | `lib/new_calendar_page.rb` | page | · |
+| 59 | `src/utils/gcal-source-discoverer.c` | `lib/source_discoverer.rb` | helper | · |
+| 60 | `src/gui/importer/gcal-import-dialog.blp` + `.c` | `lib/import_dialog.rb` | dialog | · |
+| 61 | `src/gui/importer/gcal-import-file-row.blp` + `.c` | `lib/import_file_row.rb` | row | · |
+| 62 | `src/gui/importer/gcal-importer.c` | `lib/importer.rb` | helper | · |
+
+62 user-facing components, 18 present.
+
+### Supporting files
+
+| Upstream | Target | Present |
+|---|---|:---:|
+| `src/core/gcal-context.c` | `lib/context.rb` | ✓ |
+| `src/core/gcal-manager.c` | `lib/manager.rb` | ✓ |
+| `src/core/gcal-calendar.c` | `lib/calendar.rb` | ✓ |
+| `src/core/gcal-calendar-monitor.c` | `lib/calendar_monitor.rb` | · |
+| `src/core/gcal-event.c` | `lib/event.rb` | ✓ |
+| `src/core/gcal-event-list.c` | `lib/event_list.rb` | ✓ |
+| `src/core/gcal-event-attendee.c` | `lib/event_attendee.rb` | ✓ |
+| `src/core/gcal-event-organizer.c` | `lib/event_organizer.rb` | ✓ |
+| `src/core/gcal-recurrence.c` | `lib/recurrence.rb` | ✓ |
+| `src/core/gcal-range.c` | `lib/range.rb` | ✓ |
+| `src/core/gcal-range-tree.c` | `lib/range_tree.rb` | ✓ |
+| `src/core/gcal-timeline.c` | `lib/timeline.rb` | · |
+| `src/core/gcal-timeline-subscriber.c` | `lib/timeline_subscriber.rb` | · |
+| `src/core/gcal-clock.c` | `lib/clock.rb` | ✓ |
+| `src/core/gcal-timer.c` | `lib/timer.rb` | ✓ |
+| `src/core/gcal-time-zone-monitor.c` | `lib/time_zone_monitor.rb` | · |
+| `src/core/gcal-shell-search-provider.c` | `lib/shell_search_provider.rb` | · |
+| `src/search/gcal-search-engine.c` | `lib/search_engine.rb` | · |
+| `src/search/gcal-search-model.c` | `lib/search_model.rb` | · |
+| `src/search/gcal-search-hit.c` | `lib/search_hit.rb` | · |
+| `src/search/gcal-search-hit-event.c` | `lib/search_hit_event.rb` | · |
+| `src/weather/gcal-weather-service.c` | `lib/weather_service.rb` | · |
+| `src/weather/gcal-weather-info.c` | `lib/weather_info.rb` | · |
+| `src/utils/gcal-date-time-utils.c` | `lib/date_time_utils.rb` | ✓ |
+| `src/utils/gcal-gui-utils.c` | `lib/gui_utils.rb` | · |
+| `src/utils/gcal-utils.c` | `lib/utils.rb` | ✓ |
+| `data/org.gnome.calendar.gschema.xml.in` | `lib/settings.rb` | ✓ |
+| `src/theme/style.css` + `events.css` | `lib/style.rb` | ✓ |
+| `src/gui/icons/*.svg` (16 icons) | `data/icons/` + loader | · |
+| `po/*.po` (78 locales) | translation catalogue | · |
+
+28 supporting files, 16 present.
+
+---
+
 ## Summary
 
 | Area | Components | Present on `ruby` |
 |---|---:|---:|
-| Application + window + shortcuts dialog | 3 | 0 |
-| Shared widgets | 4 | 0 |
-| Views | 11 | 0 |
-| Event display widgets | 14 | 0 |
-| Event editor | 18 | 0 |
-| Calendar management | 7 | 0 |
-| Importer | 3 | 0 |
-| **User-facing total** | **60** | **0** |
-| Supporting models/services/helpers | 33 | 0 |
+| Application + window + shortcuts dialog | 3 | 3 |
+| Shared widgets (`src/gui/common/`) | 4 | 3 |
+| Views (`src/gui/views/`) | 12 | 7 |
+| Event display widgets (`src/gui/`) | 14 | 4 |
+| Event editor (`src/gui/event-editor/`) | 19 | 1 |
+| Calendar management (`src/gui/calendar-management/`) | 7 | 0 |
+| Importer (`src/gui/importer/`) | 3 | 0 |
+| **User-facing total** | **62** | **18** |
+| Supporting models / services / helpers | 28 | 16 |
 
-The `ruby` branch is at the packaging stub. Full parity is 60 user-facing
-components plus the 33 supporting files they depend on.
+Full parity is 62 user-facing components plus 28 supporting files. The shell,
+the month view, the agenda view, the sidebar and the quick-add popover are
+done; 44 user-facing components remain.
 
-## Suggested port order
+## Remaining port order
 
-1. `lib/settings.rb`, `lib/event.rb`, `lib/calendar.rb`, `lib/range.rb`, `lib/date_time_utils.rb` — the model the views read.
-2. `lib/window.rb` + `lib/main.rb` — shell, actions, accelerators, menu, breakpoints, view stack with placeholder views.
-3. `lib/shortcuts_dialog.rb` — cheap, and makes `app.shortcuts` real.
-4. `lib/multi_choice.rb` → `lib/date_chooser_day.rb` → `lib/date_chooser.rb` → `lib/calendar_navigation_button.rb` — the sidebar and header date pickers.
-5. `lib/calendar_row.rb` + `lib/calendar_list.rb` — the sidebar calendar list.
-6. `lib/event_widget.rb`, `lib/month_cell.rb`, `lib/month_view_row.rb`, `lib/month_view.rb`, `lib/month_popover.rb` — the default view.
-7. `lib/agenda_view*.rb`, then the week view (`week_hour_bar`, `week_grid`, `week_header`, `week_view`).
-8. `lib/event_popover.rb`, `lib/quick_add_popover.rb`, `lib/meeting_row.rb`.
-9. The event editor, section by section: summary → calendar combo → schedule → reminders → notes → attendees → timezone dialog.
-10. Calendar management, then the importer, then search, sync indicator and weather.
+1. `lib/month_view_row.rb`, `lib/overflow_bin.rb`, `lib/fading_label.rb`, `lib/event_widget_pool.rb`, `lib/bidi.rb` — the layout primitives the month and week views want underneath them.
+2. `lib/event_popover.rb` + `lib/meeting_row.rb` — clicking an event currently has nowhere to go.
+3. `lib/calendar_navigation_button.rb` — the header-bar date chooser, reusing `lib/date_chooser.rb`.
+4. The week view: `lib/week_hour_bar.rb` → `lib/week_grid.rb` → `lib/week_header.rb` → `lib/week_view.rb`. This fills the one empty page in the window's view stack.
+5. The event editor, section by section: `lib/event_editor_section.rb` → `lib/event_editor_dialog.rb` → summary → `lib/calendar_combo_row.rb` → `lib/event_schedule.rb` + `lib/date_selector.rb` + `lib/date_chooser_row.rb` + `lib/date_time_chooser.rb` + schedule → reminders + `lib/alarm_row.rb` → notes → attendees (`lib/organizer_row.rb`, `lib/attendee_row.rb`, `lib/attendee_summary_row.rb`, `lib/attendees_section.rb`, `lib/attendee_details_page.rb`) → `lib/time_zone_dialog.rb` + its row.
+6. Calendar management: `lib/calendar_management_page.rb` → `lib/calendars_page.rb` + `lib/calendar_management_row.rb` → `lib/edit_calendar_page.rb` → `lib/new_calendar_page.rb` + `lib/source_discoverer.rb` → `lib/calendar_management_dialog.rb`.
+7. The importer: `lib/importer.rb` → `lib/import_file_row.rb` → `lib/import_dialog.rb`, plus `lib/drop_overlay.rb` for the window's drop target.
+8. Search: `lib/search_hit.rb`, `lib/search_hit_event.rb`, `lib/search_model.rb`, `lib/search_engine.rb`, `lib/search_button.rb`, then `lib/shell_search_provider.rb`.
+9. Weather: `lib/weather_info.rb`, `lib/weather_service.rb`, `lib/weather_settings.rb`.
+10. The leftovers: `lib/calendar_monitor.rb`, `lib/timeline.rb`, `lib/timeline_subscriber.rb`, `lib/time_zone_monitor.rb`, `lib/gui_utils.rb`, the 16 custom icons, and the translation catalogue.
