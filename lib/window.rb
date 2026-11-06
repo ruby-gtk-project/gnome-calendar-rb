@@ -5,6 +5,7 @@ require_relative 'agenda_view'
 require_relative 'calendar_list'
 require_relative 'date_chooser'
 require_relative 'date_time_utils'
+require_relative 'event_popover'
 require_relative 'month_view'
 require_relative 'quick_add_popover'
 require_relative 'range'
@@ -158,11 +159,13 @@ class Window
       month_view.tap do |view|
         view.on_create_event { |range, _x, _y| show_quick_add(range) }
         view.on_create_event_detailed { |range| show_quick_add(range) }
+        view.on_event_activated { |event, widget| show_event(event, widget) }
       end
 
       agenda_view.tap do |view|
         view.on_create_event { |range, _x, _y| show_quick_add(range) }
         view.on_create_event_detailed { |range| show_quick_add(range) }
+        view.on_event_activated { |event, widget| show_event(event, widget) }
       end
 
       date_chooser.on_day_selected { |date| self.active_date = date }
@@ -394,6 +397,7 @@ class Window
   def sync_indicator = @sync_indicator ||= SyncIndicator.new
   def calendar_list = @calendar_list ||= CalendarList.new(context)
   def quick_add_popover = @quick_add_popover ||= QuickAddPopover.new(context)
+  def event_popover = @event_popover ||= EventPopover.new(context)
 
   def date_chooser
     @date_chooser ||= DateChooser.new(
@@ -540,6 +544,13 @@ class Window
     def show_quick_add(range)
       quick_add_popover.build
       quick_add_popover.show_for(range, current_view_widget)
+      self
+    end
+
+    # Upstream's "event-activated" handling: a click on an event opens the
+    # event popover, pointed at the event widget that was clicked.
+    def show_event(event, widget)
+      event_popover.show_for(event, widget.widget)
       self
     end
 

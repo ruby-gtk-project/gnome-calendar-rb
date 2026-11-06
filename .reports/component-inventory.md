@@ -8,29 +8,30 @@ assembly in `build`).
 ## State of `lib/` on `ruby`
 
 The port has a working shell and its default view. `lib/` on `ruby` now holds
-36 files:
+38 files:
 
 ```
 lib/main.rb                 lib/window.rb               lib/shortcuts_dialog.rb
 lib/view.rb                 lib/month_view.rb           lib/month_cell.rb
 lib/month_popover.rb        lib/agenda_view.rb          lib/agenda_view_day.rb
 lib/agenda_view_day_row.rb  lib/event_widget.rb         lib/quick_add_popover.rb
-lib/date_chooser.rb         lib/date_chooser_day.rb     lib/calendar_row.rb
-lib/calendar_list.rb        lib/sync_indicator.rb       lib/multi_choice.rb
-lib/context.rb              lib/manager.rb              lib/calendar.rb
-lib/event.rb                lib/event_list.rb           lib/event_attendee.rb
-lib/event_organizer.rb      lib/recurrence.rb           lib/range.rb
-lib/range_tree.rb           lib/clock.rb                lib/timer.rb
-lib/date_time_utils.rb      lib/utils.rb                lib/settings.rb
+lib/event_popover.rb        lib/meeting_row.rb          lib/date_chooser.rb
+lib/date_chooser_day.rb     lib/calendar_row.rb         lib/calendar_list.rb
+lib/sync_indicator.rb       lib/multi_choice.rb         lib/context.rb
+lib/manager.rb              lib/calendar.rb             lib/event.rb
+lib/event_list.rb           lib/event_attendee.rb       lib/event_organizer.rb
+lib/recurrence.rb           lib/range.rb                lib/range_tree.rb
+lib/clock.rb                lib/timer.rb                lib/date_time_utils.rb
+lib/utils.rb                lib/settings.rb
 lib/style.rb
 lib/gnome_calendar.rb       lib/gnome_calendar/application.rb   # packaging stubs
 lib/gnome/calendar/rb/version.rb                                # kettle-jem
 ```
 
-18 of the 61 user-facing components exist; 16 of the supporting model, service
+20 of the 62 user-facing components exist; 16 of the supporting model, service
 and helper files exist. The week view, the whole event editor, calendar
-management, the importer, search, weather and the event popover are all still
-absent. Per-component status is in the table at the end.
+management, the importer, search and weather are all still absent.
+Per-component status is in the table at the end.
 
 The pilot port keeps the real app in flat `lib/*.rb` (`lib/main.rb` holds the
 `App` class) and leaves `lib/<gem_name>/application.rb` as the untouched
@@ -330,8 +331,8 @@ Custom icons shipped in the gresource: `add-reminder-symbolic`,
 | 19 | `src/gui/views/gcal-agenda-view-day.c` | `lib/agenda_view_day.rb` | model object | ✓ |
 | 20 | `src/gui/gcal-event-widget.blp` + `.c` | `lib/event_widget.rb` | widget | ✓ |
 | 21 | `src/gui/gcal-event-widget-pool.c` | `lib/event_widget_pool.rb` | helper | · |
-| 22 | `src/gui/gcal-event-popover.blp` + `.c` | `lib/event_popover.rb` | popover | · |
-| 23 | `src/gui/gcal-meeting-row.blp` + `.c` | `lib/meeting_row.rb` | row | · |
+| 22 | `src/gui/gcal-event-popover.blp` + `.c` | `lib/event_popover.rb` | popover | ✓ |
+| 23 | `src/gui/gcal-meeting-row.blp` + `.c` | `lib/meeting_row.rb` | row | ✓ |
 | 24 | `src/gui/gcal-quick-add-popover.blp` + `.c` | `lib/quick_add_popover.rb` | popover | ✓ |
 | 25 | `src/gui/gcal-search-button.blp` + `.c` | `lib/search_button.rb` | widget | · |
 | 26 | `src/gui/gcal-sync-indicator.blp` + `.c` | `lib/sync_indicator.rb` | widget | ✓ |
@@ -372,7 +373,7 @@ Custom icons shipped in the gresource: `add-reminder-symbolic`,
 | 61 | `src/gui/importer/gcal-import-file-row.blp` + `.c` | `lib/import_file_row.rb` | row | · |
 | 62 | `src/gui/importer/gcal-importer.c` | `lib/importer.rb` | helper | · |
 
-62 user-facing components, 18 present.
+62 user-facing components, 20 present.
 
 ### Supporting files
 
@@ -420,11 +421,11 @@ Custom icons shipped in the gresource: `add-reminder-symbolic`,
 | Application + window + shortcuts dialog | 3 | 3 |
 | Shared widgets (`src/gui/common/`) | 4 | 3 |
 | Views (`src/gui/views/`) | 12 | 7 |
-| Event display widgets (`src/gui/`) | 14 | 4 |
+| Event display widgets (`src/gui/`) | 14 | 6 |
 | Event editor (`src/gui/event-editor/`) | 19 | 1 |
 | Calendar management (`src/gui/calendar-management/`) | 7 | 0 |
 | Importer (`src/gui/importer/`) | 3 | 0 |
-| **User-facing total** | **62** | **18** |
+| **User-facing total** | **62** | **20** |
 | Supporting models / services / helpers | 28 | 16 |
 
 Full parity is 62 user-facing components plus 28 supporting files. The shell,
@@ -434,7 +435,6 @@ done; 44 user-facing components remain.
 ## Remaining port order
 
 1. `lib/month_view_row.rb`, `lib/overflow_bin.rb`, `lib/fading_label.rb`, `lib/event_widget_pool.rb`, `lib/bidi.rb` — the layout primitives the month and week views want underneath them.
-2. `lib/event_popover.rb` + `lib/meeting_row.rb` — clicking an event currently has nowhere to go.
 3. `lib/calendar_navigation_button.rb` — the header-bar date chooser, reusing `lib/date_chooser.rb`.
 4. The week view: `lib/week_hour_bar.rb` → `lib/week_grid.rb` → `lib/week_header.rb` → `lib/week_view.rb`. This fills the one empty page in the window's view stack.
 5. The event editor, section by section: `lib/event_editor_section.rb` → `lib/event_editor_dialog.rb` → summary → `lib/calendar_combo_row.rb` → `lib/event_schedule.rb` + `lib/date_selector.rb` + `lib/date_chooser_row.rb` + `lib/date_time_chooser.rb` + schedule → reminders + `lib/alarm_row.rb` → notes → attendees (`lib/organizer_row.rb`, `lib/attendee_row.rb`, `lib/attendee_summary_row.rb`, `lib/attendees_section.rb`, `lib/attendee_details_page.rb`) → `lib/time_zone_dialog.rb` + its row.
