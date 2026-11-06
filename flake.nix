@@ -25,6 +25,12 @@
           libadwaita
           harfbuzz
           librsvg
+          # Carrying the typelibs for this app's binding gems. gtkStack feeds
+          # both buildInputs and typelibPath, so one list does both jobs.
+          libsoup_3
+          evolution-data-server
+          libgweather
+          glib-networking
         ]
         # The Ruby `pkg-config` gem resolves `Requires.private` transitively and
         # hard-fails if any .pc in the chain is missing, so gtk4's whole private
@@ -95,6 +101,40 @@
         typelibPath = pkgs.lib.makeSearchPath "lib/girepository-1.0"
           (map (drv: drv.out or drv) (gtkStack ++ [ pkgs.at-spi2-core ]));
 
+        # ashpd carries a Rust extension, and its precompiled platform gems need no
+        # compiler. Gemfile.lock names every platform the gem ships, so bundix writes
+        # the one entry it always writes: no platform, and the source gem's hash --
+        # which would want cargo to build it, and fails here as
+        #   hash mismatch in fixed-output derivation 'ashpd-0.1.1.gem.drv'
+        # because the fetch gets a platform gem and the lock recorded the source one.
+        #
+        # The platform belongs to the system being built for rather than to the
+        # lockfile, so the entry is rewritten into the platform gem for this system.
+        # This is the pattern async-matrix uses for vodozemac.
+        #
+        # These hashes are for the version Gemfile.lock resolves: a bump needs them
+        # recomputed with
+        #   nix-prefetch-url https://rubygems.org/downloads/ashpd-<v>-<platform>.gem
+        ashpdPlatforms = {
+          x86_64-linux  = { platform = "x86_64-linux";  sha256 = "0pnjv2rszvd10dvn3qmgf5vlkgmkjnkj18phvbvaya1arsm3ph9s"; };
+          aarch64-linux = { platform = "aarch64-linux"; sha256 = "156x0l8fal0n05k6ya6qdfgl8277595mrg6gx0syis6dx3rr8fk7"; };
+          x86_64-darwin = { platform = "x86_64-darwin"; sha256 = "0dq81l7pkmxpkxp9i6g3wwdj9pynp4jl691sw8d6q58qww5a2ag8"; };
+          aarch64-darwin = { platform = "arm64-darwin"; sha256 = "19xfp65ag0mmp55kkwwq9qg0vmm1pxfswf9qca55b81k9phw2bbq"; };
+        };
+
+        calendarGemset = import ./nix/gemset.nix;
+
+        ashpdGem =
+          let
+            selected = ashpdPlatforms.${system} or (throw
+              "ashpd has no precompiled gem for ${system}");
+            generic = calendarGemset.ashpd;
+          in
+          generic // {
+            version = "${generic.version}-${selected.platform}";
+            source = generic.source // { sha256 = selected.sha256; };
+          };
+
         # nix/ and not the repo root: the root Gemfile is kettle-jem's
         # development bundle — rubocop, rspec, yard, the kettle-dev stack — and
         # must not end up in a packaged app's runtime closure. nix/Gemfile holds
@@ -103,7 +143,12 @@
           name = "gnome-calendar-gems";
           ruby = pkgs.ruby_3_4;
           inherit gemConfig;
-          gemdir = ./nix;
+          # gemfile/lockfile/gemset explicitly rather than `gemdir`, because the
+          # gemset is patched above to select ashpd's platform gem; gemdir would
+          # read nix/gemset.nix unmodified and fetch the source gem.
+          gemfile = ./nix/Gemfile;
+          lockfile = ./nix/Gemfile.lock;
+          gemset = calendarGemset // { ashpd = ashpdGem; };
         };
 
         # The launcher is whatever the gemspec installs into exe/. Reading the
@@ -164,6 +209,7 @@
               --prefix XDG_DATA_DIRS : "$out/share/gsettings-schemas/gnome-calendar-0.1.0" \
               --prefix XDG_DATA_DIRS : "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}" \
               --prefix XDG_DATA_DIRS : "${pkgs.gtk4}/share/gsettings-schemas/${pkgs.gtk4.name}" \
+              --prefix XDG_DATA_DIRS : "${pkgs.libgweather}/share/gsettings-schemas/${pkgs.libgweather.name}" \
               --prefix XDG_DATA_DIRS : "${pkgs.adwaita-icon-theme}/share"
 
             runHook postInstall
@@ -206,7 +252,10 @@
           # Icons, GSettings schemas and the GTK portal all resolve through
           # XDG_DATA_DIRS; without these the window opens with blank icons.
           shellHook = ''
-            export XDG_DATA_DIRS="${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk4}/share/gsettings-schemas/${pkgs.gtk4.name}:${pkgs.adwaita-icon-theme}/share:$XDG_DATA_DIRS"
+            export XDG_DATA_DIRS="${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk4}/share/gsettings-schemas/${pkgs.gtk4.name}:${pkgs.libgweather}/share/gsettings-schemas/${pkgs.libgweather.name}:${pkgs.adwaita-icon-theme}/share:$XDG_DATA_DIRS"
+            # bundlerEnv installs the platform gem ashpd, so forcing the ruby
+            # platform asks bundler for a gem which is not there.
+            export BUNDLE_FORCE_RUBY_PLATFORM=false
             export GI_TYPELIB_PATH="${typelibPath}''${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
             export RUBYLIB="$PWD/lib''${RUBYLIB:+:$RUBYLIB}"
             [ -d data/schemas ] && export GSETTINGS_SCHEMA_DIR="$PWD/data/schemas"
