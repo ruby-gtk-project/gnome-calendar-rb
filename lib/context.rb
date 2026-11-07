@@ -5,6 +5,7 @@ require_relative 'clock'
 require_relative 'event_widget_pool'
 require_relative 'manager'
 require_relative 'settings'
+require_relative 'weather_service'
 
 # Context is the single object every widget is handed: the clock, the manager,
 # the settings, the system time zone and the user's 12h/24h preference. It
@@ -33,10 +34,15 @@ class Context
   # reclaimed into, shared across the whole application.
   def event_widget_pool = @event_widget_pool ||= EventWidgetPool.new(time_format: @time_format)
 
+  # The weather forecast MonthCell draws next to the day number, shared
+  # across the whole application the same way event_widget_pool is.
+  def weather_service = @weather_service ||= WeatherService.new(settings)
+
   # Upstream's gcal_context_startup().
   def startup
     read_time_format
     manager.startup
+    weather_service.refresh
     self
   end
 

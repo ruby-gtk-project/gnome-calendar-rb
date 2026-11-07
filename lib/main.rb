@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'adwaita'
+require 'ashpd'
 require_relative 'context'
 require_relative 'date_time_utils'
 require_relative 'shortcuts_dialog'
@@ -42,6 +43,7 @@ class App
       application.signal_connect('startup') do
         Adwaita.init
         Style.install
+        sync_color_scheme
         context.startup
       end
 
@@ -96,6 +98,24 @@ class App
   end
 
   private
+
+    # Upstream's AdwStyleManager follows the desktop automatically once a
+    # libadwaita app is running inside a session that offers it, but a
+    # sandboxed app only ever sees the desktop's preference through the
+    # settings portal's org.freedesktop.appearance namespace, which is what
+    # this asks ashpd for. Outside a desktop session (this port's tests, a
+    # tty, a container with no xdg-desktop-portal running) the portal call
+    # raises and the style manager is left on whatever Adwaita.init chose.
+    def sync_color_scheme
+      case Ashpd::Settings.color_scheme.to_s
+      when /prefer_dark|prefer-dark/ then Adwaita::StyleManager.default.color_scheme = Adwaita::ColorScheme::PREFER_DARK
+      when /prefer_light|prefer-light/ then Adwaita::StyleManager.default.color_scheme = Adwaita::ColorScheme::PREFER_LIGHT
+      else Adwaita::StyleManager.default.color_scheme = Adwaita::ColorScheme::DEFAULT
+      end
+      self
+    rescue StandardError, NoMethodError
+      self
+    end
 
     # Upstream's gcal_application_class_init() action entries.
     def install_actions

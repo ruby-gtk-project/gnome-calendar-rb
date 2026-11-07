@@ -205,6 +205,7 @@
               --add-flags "-I$out/share/gnome-calendar/lib" \
               --add-flags "$out/share/gnome-calendar/exe/${launcher}" \
               --set GI_TYPELIB_PATH "${typelibPath}" \
+              --set GIO_EXTRA_MODULES "${pkgs.glib-networking}/lib/gio/modules" \
               --prefix XDG_DATA_DIRS : "$out/share" \
               --prefix XDG_DATA_DIRS : "$out/share/gsettings-schemas/gnome-calendar-0.1.0" \
               --prefix XDG_DATA_DIRS : "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}" \
@@ -257,6 +258,10 @@
             # platform asks bundler for a gem which is not there.
             export BUNDLE_FORCE_RUBY_PLATFORM=false
             export GI_TYPELIB_PATH="${typelibPath}''${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
+            # glib-networking's TLS backend is a GIO extension module, not a
+            # typelib; without this on GIO_EXTRA_MODULES, GWeather::Info#update
+            # fails every HTTPS fetch with "TLS support is not available".
+            export GIO_EXTRA_MODULES="${pkgs.glib-networking}/lib/gio/modules''${GIO_EXTRA_MODULES:+:$GIO_EXTRA_MODULES}"
             export RUBYLIB="$PWD/lib''${RUBYLIB:+:$RUBYLIB}"
             [ -d data/schemas ] && export GSETTINGS_SCHEMA_DIR="$PWD/data/schemas"
             unset BUNDLE_GEMFILE BUNDLE_FROZEN

@@ -2,6 +2,8 @@
 
 require 'json'
 require 'fileutils'
+require 'edataserver'
+require 'soup3'
 require_relative 'calendar'
 require_relative 'date_time_utils'
 require_relative 'event'
@@ -25,6 +27,10 @@ require_relative 'recurrence'
 # src/core/gcal-calendar-monitor.c.
 #
 class Manager
+  # Raised by #add_calendar_from_url when the URL does not answer, or
+  # answers with something that is not an iCalendar feed.
+  class WebCalendarError < StandardError; end
+
   # How far a recurring event is expanded past the end of a queried range,
   # so a weekly event still shows up in a month the user scrolls to.
   MAX_RECURRENCES = 1000
@@ -34,6 +40,7 @@ class Manager
     @calendars = []
     @events = {}
     @tree = RangeTree.new
+    @system_calendar_sources = []
     @handlers = {
       calendar_added:   [],
       calendar_changed: [],
@@ -46,6 +53,12 @@ class Manager
 
   attr_reader :data_dir
 
+  # The read-only calendars discovered on the desktop's Evolution Data
+  # Server registry: a GNOME Online Accounts calendar, a CalDAV account set
+  # up in Settings, and so on. Empty outside a desktop session, since there
+  # is then no evolution-source-registry service to ask.
+  attr_reader :system_calendar_sources
+
   # Upstream's gcal_manager_startup(): read what is on disk, and make sure
   # there is at least one calendar to put an event in.
   def startup
@@ -55,6 +68,7 @@ class Manager
     if @calendars.empty?
       create_calendar(name: 'Personal', color: Calendar::DEFAULT_COLOR, default: true)
     end
+    discover_system_calendar_sources
     @calendars.each { |calendar| notify(:calendar_added, calendar) }
     notify(:events_changed, nil)
     self
@@ -170,6 +184,31 @@ class Manager
 
   def event(uuid) = @events[uuid]
 
+  # Upstream's new-calendar-page, web section: GcalSourceDiscoverer fetches
+  # the URL with libsoup and, finding an ICS body, builds an ESource for it.
+  # This port has no ESource/ECal, so the fetch becomes a calendar straight
+  # away: every VEVENT in the body becomes a local Event, stored the same
+  # way an event created in the app is.
+  def add_calendar_from_url(url, name: nil)
+    body = Soup::Session.new.then do |session|
+      message = Soup::Message.new('GET', url)
+      bytes = session.send_and_read(message, nil)
+      unless message.status_code == 200
+        raise WebCalendarError, "#{url} answered with HTTP #{message.status_code}"
+      end
+
+      bytes.to_s.dup.force_encoding('UTF-8').scrub
+    end
+
+    unless body.include?('BEGIN:VCALENDAR')
+      raise WebCalendarError, "#{url} is not an iCalendar feed"
+    end
+
+    create_calendar(name: name || File.basename(url), color: Calendar::DEFAULT_COLOR).tap do |calendar|
+      parse_vevents(body).each { |attributes| create_event(Event.new(calendar: calendar, **attributes)) }
+    end
+  end
+
   # Every event of every visible calendar overlapping @range, recurrences
   # expanded, in upstream's sort order. This is what a view asks for.
   def events_in_range(range)
@@ -224,6 +263,56 @@ class Manager
     def notify(signal, payload)
       @handlers.fetch(signal).each { |handler| handler.call(payload) }
       self
+    end
+
+    # Upstream talks to the registry for every calendar it has; this port's
+    # own storage covers the calendars the user created here, and this is
+    # the one real EDataServer call: listing whatever OTHER calendar sources
+    # the desktop already knows about (GOA accounts, system CalDAV/WebDAV
+    # setups), purely for display — the sidebar can show them, but writing
+    # events into them would need libecal's ECalClient, which this gem does
+    # not bind. Outside a desktop session (this port's tests, a tty, a
+    # container) there is no evolution-source-registry service to answer,
+    # and the registry constructor itself is what raises for that.
+    def discover_system_calendar_sources
+      @system_calendar_sources = EDataServer::SourceRegistry.new
+                                                            .list_sources(EDataServer::SOURCE_EXTENSION_CALENDAR)
+                                                            .select(&:enabled?)
+      self
+    rescue StandardError, NoMethodError => e
+      @system_calendar_sources = []
+      warn("Manager#discover_system_calendar_sources: #{e.class}: #{e.message}")
+      self
+    end
+
+    # A deliberately small ICS reader: SUMMARY/DTSTART/DTEND only, no
+    # recurrence, no line folding, no TZID. Upstream hands the body to
+    # libical through ECalClient; this port has neither bound, and a feed's
+    # events are shown read-only once imported, so that much is enough to
+    # show what is on the calendar without re-implementing libical.
+    def parse_vevents(body)
+      body.scan(/BEGIN:VEVENT(.*?)END:VEVENT/m).map do |(block)|
+        {
+          summary:    ics_field(block, 'SUMMARY') || '',
+          date_start: ics_time(ics_field(block, 'DTSTART')) || Time.now,
+          date_end:   ics_time(ics_field(block, 'DTEND')),
+        }
+      end
+    end
+
+    def ics_field(block, name)
+      match = block.match(/^#{name}(?:;[^:]*)?:(.+)$/)
+      match && match[1].strip
+    end
+
+    def ics_time(value)
+      case value
+      when nil then nil
+      when /\A\d{8}\z/ then Time.strptime(value, '%Y%m%d')
+      else Time.strptime(value.delete('Z'), '%Y%m%dT%H%M%S')
+      end
+    rescue ArgumentError
+      nil
     end
 
     def default_data_dir

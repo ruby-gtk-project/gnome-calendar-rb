@@ -76,6 +76,8 @@ class MonthView
         widget.build
       end
 
+      @context.weather_service.on_updated { fill_cells }
+
       initialise_headings
       refresh
     end
@@ -201,6 +203,7 @@ class MonthView
         cell.other_month = date.month != @active_date.month
         cell.selected = DateTimeUtils.compare_date(date, @active_date).zero?
         cell.events = events_on(date)
+        cell.weather = @context.weather_service.forecast_for(date) || [nil, nil]
       end
       self
     end
