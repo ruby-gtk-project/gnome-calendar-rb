@@ -3,6 +3,7 @@
 require 'adwaita'
 require_relative 'date_time_utils'
 require_relative 'event_widget'
+require_relative 'event_widget_pool'
 require_relative 'settings'
 
 # MonthPopover is what a month cell's "+3 more" button opens: the day's
@@ -18,11 +19,13 @@ require_relative 'settings'
 class MonthPopover
   attr_reader :date
 
-  def initialize(time_format: Settings::FORMAT_24H)
+  def initialize(time_format: Settings::FORMAT_24H, event_widget_pool: nil)
     @time_format = time_format
+    @event_widget_pool = event_widget_pool || EventWidgetPool.new(time_format: time_format)
     @date = DateTimeUtils.start_of_day(Time.now)
     @events = []
     @parent = nil
+    @event_widgets = []
     @event_activated_handlers = []
     @new_event_handlers = []
   end
@@ -153,21 +156,27 @@ class MonthPopover
 
     def rebuild_rows
       @rows ||= []
+      @rows.each { |row| row.child = nil }
       @rows.each { |row| listbox.remove(row) }
+      @event_widgets.each { |event_widget| @event_widget_pool.reclaim(event_widget) }
+      @event_widgets = []
       @rows = @events.map { |event| build_row(event) }
       @rows.each { |row| listbox.append(row) }
       self
     end
 
     def build_row(event)
+      event_widget = @event_widget_pool.take_or_create(event, time_format: @time_format).tap do |widget|
+        widget.on_activated do |activated, inner|
+          popover.popdown
+          @event_activated_handlers.each { |handler| handler.call(activated, inner) }
+        end
+      end
+      @event_widgets << event_widget
+
       Gtk::ListBoxRow.new.tap do |row|
         row.activatable = false
-        row.child = EventWidget.new(event, time_format: @time_format).tap do |event_widget|
-          event_widget.on_activated do |activated, widget|
-            popover.popdown
-            @event_activated_handlers.each { |handler| handler.call(activated, widget) }
-          end
-        end.build
+        row.child = event_widget.button
       end
     end
 end

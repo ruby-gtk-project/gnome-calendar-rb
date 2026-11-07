@@ -154,11 +154,18 @@ class MonthView
 
   def cells
     @cells ||= Array.new(ROWS) do
-      Array.new(COLUMNS) { MonthCell.new(time_format: @context.time_format) }
+      Array.new(COLUMNS) do
+        MonthCell.new(time_format: @context.time_format, event_widget_pool: @context.event_widget_pool)
+      end
     end
   end
 
-  def popover = @popover ||= MonthPopover.new(time_format: @context.time_format)
+  def popover
+    @popover ||= MonthPopover.new(
+      time_format:       @context.time_format,
+      event_widget_pool: @context.event_widget_pool,
+    )
+  end
 
   private
 

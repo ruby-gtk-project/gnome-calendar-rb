@@ -68,12 +68,32 @@ class EventWidget
   # Rebuilds the text and the colour from the event, which is what an update
   # from the manager triggers.
   def refresh
-    summary_inscription.text = @event.summary
-    summary_inscription.tooltip_text = @event.format_date(@time_format)
-    timestamp_label.text = @event.format_timestamp(@time_format)
-    timestamp_label.visible = !@event.all_day?
-    apply_color
+    if @event.nil?
+      summary_inscription.text = ''
+      summary_inscription.tooltip_text = ''
+      timestamp_label.text = ''
+      timestamp_label.visible = false
+    else
+      summary_inscription.text = @event.summary
+      summary_inscription.tooltip_text = @event.format_date(@time_format)
+      timestamp_label.text = @event.format_timestamp(@time_format)
+      timestamp_label.visible = !@event.all_day?
+      apply_color
+    end
     self
+  end
+
+  # Rebinds this widget to @event, which is what EventWidgetPool does to a
+  # widget it is handing back out: the previous owner's "activate" handlers
+  # are dropped along with the slant classes, so the widget comes back as
+  # clean as a freshly built one.
+  def event=(event)
+    @event = event
+    @activate_handlers = []
+    self.slanted_start = false
+    self.slanted_end = false
+    refresh
+    event
   end
 
   def time_format=(time_format)

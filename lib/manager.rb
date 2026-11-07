@@ -5,6 +5,7 @@ require 'fileutils'
 require_relative 'calendar'
 require_relative 'date_time_utils'
 require_relative 'event'
+require_relative 'global'
 require_relative 'range'
 require_relative 'range_tree'
 require_relative 'recurrence'
@@ -48,6 +49,8 @@ class Manager
   # Upstream's gcal_manager_startup(): read what is on disk, and make sure
   # there is at least one calendar to put an event in.
   def startup
+    raise 'Manager#startup must run on the main thread' unless Global.main_thread?
+
     load_calendars
     if @calendars.empty?
       create_calendar(name: 'Personal', color: Calendar::DEFAULT_COLOR, default: true)
@@ -189,6 +192,8 @@ class Manager
   # backing store. With local files that is quick, but it goes through the
   # same synchronizing signal so the sync indicator behaves as upstream's.
   def refresh
+    raise 'Manager#refresh must run on the main thread' unless Global.main_thread?
+
     @synchronizing = true
     notify(:synchronizing, true)
     load_calendars

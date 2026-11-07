@@ -133,7 +133,9 @@ class AgendaView
   end
 
   def day_rows
-    @day_rows ||= days.map { |day| AgendaViewDayRow.new(day, time_format: @context.time_format) }
+    @day_rows ||= days.map do |day|
+      AgendaViewDayRow.new(day, time_format: @context.time_format, event_widget_pool: @context.event_widget_pool)
+    end
   end
 
   private

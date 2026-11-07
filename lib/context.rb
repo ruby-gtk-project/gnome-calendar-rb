@@ -2,6 +2,7 @@
 
 require 'adwaita'
 require_relative 'clock'
+require_relative 'event_widget_pool'
 require_relative 'manager'
 require_relative 'settings'
 
@@ -27,6 +28,10 @@ class Context
     @handlers = { time_format_changed: [], timezone_changed: [] }
     watch_settings_portal
   end
+
+  # The event widget pool every view's event widgets are taken from and
+  # reclaimed into, shared across the whole application.
+  def event_widget_pool = @event_widget_pool ||= EventWidgetPool.new(time_format: @time_format)
 
   # Upstream's gcal_context_startup().
   def startup

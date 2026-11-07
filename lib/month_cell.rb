@@ -3,6 +3,7 @@
 require 'adwaita'
 require_relative 'date_time_utils'
 require_relative 'event_widget'
+require_relative 'event_widget_pool'
 require_relative 'settings'
 require_relative 'style'
 
@@ -24,8 +25,9 @@ class MonthCell
 
   attr_reader :date, :events, :overflow
 
-  def initialize(time_format: Settings::FORMAT_24H)
+  def initialize(time_format: Settings::FORMAT_24H, event_widget_pool: nil)
     @time_format = time_format
+    @event_widget_pool = event_widget_pool || EventWidgetPool.new(time_format: time_format)
     @date = DateTimeUtils.start_of_day(Time.now)
     @events = []
     @overflow = 0
@@ -239,7 +241,10 @@ class MonthCell
     # sets the overflow count from the rest, as
     # gcal_month_cell_set_overflow() does.
     def rebuild_event_widgets
-      @event_widgets.each { |event_widget| content_space.remove(event_widget.button) }
+      @event_widgets.each do |event_widget|
+        content_space.remove(event_widget.button)
+        @event_widget_pool.reclaim(event_widget)
+      end
       @event_widgets = @events.first(MAX_VISIBLE_EVENTS).map { |event| build_event_widget(event) }
       @event_widgets.each { |event_widget| content_space.append(event_widget.button) }
 
@@ -257,11 +262,10 @@ class MonthCell
     end
 
     def build_event_widget(event)
-      EventWidget.new(event, time_format: @time_format).tap do |event_widget|
+      @event_widget_pool.take_or_create(event, time_format: @time_format).tap do |event_widget|
         event_widget.on_activated do |activated, widget|
           @event_activated_handlers.each { |handler| handler.call(activated, widget) }
         end
-        event_widget.build
       end
     end
 
