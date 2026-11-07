@@ -11,21 +11,19 @@ per unit as each one is actually ported.
 Totals: upstream has **73** `.c`/`.h` component-relevant source files (core +
 gui + search + utils + weather), **44** `.blp` templates, 1 GSettings schema
 (6 keys), 5 GResource manifests, and a `po/` catalogue of ~190 locales. This
-fork's `lib/` has 33 files as of `ed5e9f43` (this inventory table was last
-fully rewritten at `363bb342`, one commit before `global.rb` and
-`event_widget_pool.rb` landed; those two rows are hand-patched above rather
-than the whole document being re-walked). Of the units below, **25 already
-exist** in `lib/`, **25 do not exist at all** — updated from the prior
-23/27 to reflect those two additions; every other row is unchanged and this
-pass did not re-verify them beyond the file-existence check already
-re-confirmed in `.reports/component-identification.md`.
+fork's `lib/` has 37 files as of `f1159db7` (`lib/gnome_calendar/application.rb`
+and `lib/gnome/calendar/rb/version.rb` are packaging scaffolding, not ported
+components). Of the units below, **26 already exist** in `lib/`, **24 do not
+exist at all** — updated from the prior 25/25 because `gcal-weather-service.c`
+is now ported as `lib/weather_service.rb` (wired to the real `libgweather` gem
+in `ebee87e6`); every other row's existence is unchanged from the prior pass.
 
 ## Window and application shell
 
 | Upstream file(s) | `lib/*.rb` target | Kind | Exists? |
 |---|---|---|---|
 | `src/gui/gcal-application.c/.h` | `lib/gnome_calendar/application.rb` | application class (actions, accelerators, CLI) | yes |
-| `src/main.c` | `lib/main.rb` | entry point, About dialog, app actions | yes |
+| `src/main.c` | `lib/main.rb` | entry point, About dialog, app actions | yes (gained `sync_color_scheme` via `ashpd`'s `Ashpd::Settings.color_scheme` at startup in `ebee87e6`) |
 | `src/gui/gcal-window.c/.h` + `gcal-window.blp` | `lib/window.rb` | main `Adw.ApplicationWindow` | yes |
 | `src/gui/shortcuts-dialog.blp` | `lib/shortcuts_dialog.rb` | keyboard shortcuts window | yes |
 | `src/appdata/org.gnome.Calendar.metainfo.xml.in.in` | — | AppStream metadata (About dialog release notes, screenshots) | **no** |
@@ -47,7 +45,7 @@ re-confirmed in `.reports/component-identification.md`.
 | `gcal-event-list.c/.h` | `lib/event_list.rb` | sorted list of events | yes |
 | `gcal-event-organizer.c/.h` | `lib/event_organizer.rb` | model: event organizer | yes |
 | `gcal-global.c/.h` | `lib/global.rb` | process-wide globals/helpers | yes (ported in `ed5e9f43`, after this inventory was first written; `component-parity.md` was not re-walked for it) |
-| `gcal-manager.c/.h` | `lib/manager.rb` | ESource/calendar manager, sync | yes |
+| `gcal-manager.c/.h` | `lib/manager.rb` | ESource/calendar manager, sync | yes (gained `discover_system_calendar_sources` via `edataserver`'s `EDataServer::SourceRegistry` and `add_calendar_from_url` via `soup3`'s `Soup::Session`, both in `ebee87e6`) |
 | `gcal-range.c/.h` | `lib/range.rb` | date range value type | yes |
 | `gcal-range-tree.c/.h` | `lib/range_tree.rb` | interval tree of ranges | yes |
 | `gcal-recurrence.c/.h` | `lib/recurrence.rb` | recurrence rule model | yes |
@@ -78,8 +76,8 @@ re-confirmed in `.reports/component-identification.md`.
 
 | Upstream file | `lib/*.rb` target | Kind | Exists? |
 |---|---|---|---|
-| `gcal-weather-info.c/.h` | — | model: one weather forecast entry (GWeather-backed) | **no** |
-| `gcal-weather-service.c/.h` | — | fetches/caches forecasts via `libgweather` | **no** |
+| `gcal-weather-info.c/.h` | `lib/weather_service.rb` (inline, via `GWeather::Info`) | model: one weather forecast entry (GWeather-backed) | yes (folded into `WeatherService`, no separate model file — see note below) |
+| `gcal-weather-service.c/.h` | `lib/weather_service.rb` | fetches/caches forecasts via `libgweather` | yes (ported in `ebee87e6`, wired to MonthCell's icon/temperature; see note below on the missing automatic-location path) |
 | `src/gui/gcal-weather-settings.c/.h` + `.blp` | — | weather enable/location preferences row | **no** |
 
 ## Common widgets (`src/gui/common/`)
@@ -138,7 +136,7 @@ re-confirmed in `.reports/component-identification.md`.
 
 | Upstream file | `lib/*.rb` target | Kind | Exists? |
 |---|---|---|---|
-| `gcal-calendar-list.c/.h` + `.blp` | `lib/calendar_list.rb` | sidebar list of calendars | yes |
+| `gcal-calendar-list.c/.h` + `.blp` | `lib/calendar_list.rb` | sidebar list of calendars | yes (gained a read-only row group for system/GOA sources discovered via `edataserver`, and a "subscribe from URL" row that imports via `soup3`, both in `ebee87e6`) |
 | `gcal-calendar-navigation-button.c/.h` + `.blp` | — | prev/next/today navigation button | **no** |
 | `gcal-sync-indicator.c/.h` + `.blp` | `lib/sync_indicator.rb` | header-bar sync spinner | yes |
 | `gcal-quick-add-popover.c/.h` + `.blp` | `lib/quick_add_popover.rb` | "new event" quick-add popover | yes |
@@ -197,9 +195,12 @@ re-confirmed in `.reports/component-identification.md`.
   (open `.ics` file), and search.
 - The week view — one of the three primary calendar views (month/week/agenda)
   — does not exist at all; only month and agenda are ported.
-- `gcal-weather-service.c`/`gcal-weather-info.c` are unported; this is also
-  exactly where the mandatory `libgweather`/`GWeather` gem is supposed to be
-  wired in, and it has not been touched yet.
+- `gcal-weather-service.c`/`gcal-weather-info.c` are now ported as
+  `lib/weather_service.rb`, wired to the mandatory `libgweather`/`GWeather`
+  gem and feeding MonthCell's weather icon/temperature (`ebee87e6`). The
+  weather *settings row* (`gcal-weather-settings.c/.h` + `.blp`) is still
+  unported — there is no UI to change the weather location or toggle it on,
+  only the schema keys `lib/settings.rb` already mirrors.
 - `gcal-shell-search-provider.c` (GNOME Shell search integration) is
   unported, and its D-Bus/`.ini` registration files are not referenced
   anywhere in `lib/`.
@@ -217,6 +218,12 @@ re-confirmed in `.reports/component-identification.md`.
   compiled-schema install step. That is a local design note already recorded
   in the file; it is flagged here only so it is visible from the inventory,
   not re-litigated.
-- Gem wiring (`ashpd`, `edataserver`, `libgweather`, `soup3`) per the fleet
-  mandate was explicitly out of scope for this survey step and has not been
-  checked or touched here.
+- Gem wiring (`ashpd`, `edataserver`, `libgweather`, `soup3`) is now done and
+  proven on the drive script's live path (`ebee87e6`, `f1159db7`): each gem
+  is required and called from `lib/weather_service.rb`, `lib/manager.rb`,
+  `lib/calendar_list.rb` and `lib/main.rb`, and nothing in the gemspec is
+  declared-but-unused. None of the four is unwound by this pass.
+- Still open from the prior pass: a real widget/CSS/signal/action table per
+  unit (the skill's normal per-file output) has not been built yet for any
+  already-ported file — start with `gcal-window.blp` and the already-ported
+  views, since those are the ones most likely to have silently drifted.
