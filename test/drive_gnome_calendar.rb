@@ -109,9 +109,12 @@ GtkDriver.drive(App.new, shots: SHOTS) do |d, app|
     d.check('the month view is the visible stack child') do
       app.window.views_stack.visible_child_name == 'month'
     end
-    d.check('the title label names the current month and year') do
+    d.check('the calendar navigation button names the current month and year') do
       now = Time.now
-      app.window.title_label.text == "#{Utils.month_name(now.month - 1)} #{now.year}"
+      app.window.calendar_navigation_button.button.label == "#{Utils.month_name(now.month - 1)} #{now.year}"
+    end
+    d.check('the calendar navigation button is active in the month view') do
+      app.window.calendar_navigation_button.active
     end
     d.check('the sync indicator starts empty') { app.window.sync_indicator.stack.visible_child_name == 'empty' }
     d.check('a default Personal calendar was created on startup') do
@@ -189,6 +192,10 @@ GtkDriver.drive(App.new, shots: SHOTS) do |d, app|
     d.check('navigation labels switched to Yesterday/Tomorrow') do
       app.window.previous_date_button.tooltip_text == 'Yesterday' &&
         app.window.next_date_button.tooltip_text == 'Tomorrow'
+    end
+    d.check('the calendar navigation button went inactive (static heading)') do
+      !app.window.calendar_navigation_button.active &&
+        app.window.calendar_navigation_button.stack.visible_child_name == 'inactive'
     end
     d.check("today's row is attached") do
       app.window.agenda_view.visible_day_rows.any? { |row| row.day.n_items.positive? }

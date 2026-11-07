@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Ported from upstream gnome-calendar's src/appdata/org.gnome.Calendar.metainfo.xml.in.in.
+ Copyright 2014 Igor Gnatenko <ignatenko@src.gnome.org>
+-->
+<component type="desktop-application">
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <id>org.gnome.CalendarRb</id>
+
+  <developer id="org.gnome">
+    <name>The GNOME Project</name>
+  </developer>
+
+  <name>Calendar</name>
+  <summary>Manage your schedule</summary>
+
+  <description>
+    <p>
+      GNOME Calendar is an elegant tool to help you plan and stay on top of your schedule for
+      upcoming days and weeks, whether your months are filled with meetings and appointments,
+      public events, travel logistics, or other commitments in your life.
+    </p>
+    <p>
+      Easily create and manage unlimited calendars and events with GNOME Calendar's infinite
+      scrolling month view, week timetable, and scheduling list view.
+    </p>
+    <p>
+      Integrating the latest GNOME technologies and design best practices, GNOME Calendar builds on
+      top of the mature Evolution data server to manage large quantities of events and to provide
+      integration with other applications. You can add calendars from various online calendaring
+      services (like NextCloud, Google Calendar, and CalDAV / WebDAV servers), enabling you to
+      synchronize your events across multiple devices and platforms. GNOME Calendar also supports
+      local and offline calendaring, so you can use it anywhere and anytime while travelling
+      (or after civilization's collapse.)
+    </p>
+    <p>
+      This is a Ruby GTK4 / Libadwaita port of GNOME Calendar, built against the same Evolution
+      Data Server backend as the original.
+    </p>
+  </description>
+
+  <!-- These allow us to be found in GNOME Software, as it ignores the description for searching: -->
+  <keywords>
+    <keyword>calendars</keyword>
+    <keyword>calendaring</keyword>
+    <keyword>events</keyword>
+    <keyword>meetings</keyword>
+    <keyword>appointments</keyword>
+    <keyword>scheduling</keyword>
+    <keyword>planning</keyword>
+    <keyword>agenda</keyword>
+    <keyword>reminders</keyword>
+    <keyword>alarms</keyword>
+    <keyword>weather</keyword>
+    <keyword>forecasting</keyword>
+    <keyword translate="no">iCalendar</keyword>
+    <keyword translate="no">ics</keyword>
+    <keyword translate="no">CalDAV</keyword>
+    <keyword translate="no">WebDAV</keyword>
+    <keyword translate="no">Evolution</keyword>
+    <keyword translate="no">Nextcloud</keyword>
+    <keyword>Google Calendar</keyword>
+  </keywords>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#dc8add</color>
+    <color type="primary" scheme_preference="dark">#613583</color>
+  </branding>
+
+  <url type="homepage">https://github.com/ruby-gtk-project/gnome-calendar-rb</url>
+  <url type="bugtracker">https://github.com/ruby-gtk-project/gnome-calendar-rb/issues</url>
+  <url type="vcs-browser">https://github.com/ruby-gtk-project/gnome-calendar-rb</url>
+  <project_group>GNOME</project_group>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+
+  <recommends>
+    <internet>always</internet>
+  </recommends>
+
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </supports>
+
+  <translation type="gettext">gnome-calendar-rb</translation>
+  <launchable type="desktop-id">org.gnome.CalendarRb.desktop</launchable>
+  <provides>
+    <binary>gnome-calendar</binary>
+  </provides>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <release date="2026-11-07" version="1.0" type="development">
+      <description>
+        <p>Initial Ruby GTK4 / Libadwaita port of GNOME Calendar.</p>
+      </description>
+    </release>
+  </releases>
+</component>

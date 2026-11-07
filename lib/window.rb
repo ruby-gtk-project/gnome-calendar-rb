@@ -3,6 +3,7 @@
 require 'adwaita'
 require_relative 'agenda_view'
 require_relative 'calendar_list'
+require_relative 'calendar_navigation_button'
 require_relative 'date_chooser'
 require_relative 'date_time_utils'
 require_relative 'event_popover'
@@ -119,7 +120,7 @@ class Window
             header_bar.tap do |bar|
               bar.pack_start(sidebar_button)
               bar.pack_start(sync_indicator.build)
-              bar.title_widget = title_label
+              bar.title_widget = calendar_navigation_button.build
               bar.pack_end(menu_button)
             end
 
@@ -305,8 +306,11 @@ class Window
     end
   end
 
-  def title_label
-    @title_label ||= Gtk::Label.new.tap { |label| label.add_css_class('heading') }
+  # Upstream's GcalCalendarNavigationButton: the header bar's date control.
+  def calendar_navigation_button
+    @calendar_navigation_button ||= CalendarNavigationButton.new(active_date: @active_date).tap do |button|
+      button.on_day_selected { |date| self.active_date = date }
+    end
   end
 
   def menu_button
@@ -527,12 +531,13 @@ class Window
       previous_date_button.tooltip_text = labels.fetch(:previous_tooltip)
       next_date_button.icon_name = labels.fetch(:next_icon)
       next_date_button.tooltip_text = labels.fetch(:next_tooltip)
+      calendar_navigation_button.active = name != 'agenda'
       self
     end
 
     # Upstream's navigation button title, which names the month on screen.
     def update_title
-      title_label.text = "#{Utils.month_name(@active_date.month - 1)} #{@active_date.year}"
+      calendar_navigation_button.active_date = @active_date
       self
     end
 
