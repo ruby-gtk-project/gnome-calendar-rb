@@ -453,7 +453,14 @@ class Window
 
       window.add_action(
         Gio::SimpleAction.new('change-view', GLib::VariantType.new('i')).tap do |action|
-          action.signal_connect('activate') { |_action, parameter| change_view(parameter.value) }
+          # The Ruby bindings unwrap a GVariant 'activate' parameter on the
+          # way in, same as they do on the way out of a property read (see
+          # the ruby-gtk-testing skill's recipes.md) — `parameter` here is
+          # already a plain Integer, so `.value` raised NoMethodError on
+          # every real call to win.change-view, crashing the app the moment
+          # anything (the view switcher, an accelerator, this test) invoked
+          # it with an argument.
+          action.signal_connect('activate') { |_action, parameter| change_view(parameter) }
         end,
       )
       self
