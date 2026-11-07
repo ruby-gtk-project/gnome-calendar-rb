@@ -11,8 +11,14 @@ per unit as each one is actually ported.
 Totals: upstream has **73** `.c`/`.h` component-relevant source files (core +
 gui + search + utils + weather), **44** `.blp` templates, 1 GSettings schema
 (6 keys), 5 GResource manifests, and a `po/` catalogue of ~190 locales. This
-fork's `lib/` has 38 files. Of the units below, **23 already exist** in
-`lib/`, **27 do not exist at all**.
+fork's `lib/` has 33 files as of `ed5e9f43` (this inventory table was last
+fully rewritten at `363bb342`, one commit before `global.rb` and
+`event_widget_pool.rb` landed; those two rows are hand-patched above rather
+than the whole document being re-walked). Of the units below, **25 already
+exist** in `lib/`, **25 do not exist at all** — updated from the prior
+23/27 to reflect those two additions; every other row is unchanged and this
+pass did not re-verify them beyond the file-existence check already
+re-confirmed in `.reports/component-identification.md`.
 
 ## Window and application shell
 
@@ -40,7 +46,7 @@ fork's `lib/` has 38 files. Of the units below, **23 already exist** in
 | `gcal-event-attendee.c/.h` | `lib/event_attendee.rb` | model: one attendee | yes |
 | `gcal-event-list.c/.h` | `lib/event_list.rb` | sorted list of events | yes |
 | `gcal-event-organizer.c/.h` | `lib/event_organizer.rb` | model: event organizer | yes |
-| `gcal-global.c/.h` | — | process-wide globals/helpers | **no** |
+| `gcal-global.c/.h` | `lib/global.rb` | process-wide globals/helpers | yes (ported in `ed5e9f43`, after this inventory was first written; `component-parity.md` was not re-walked for it) |
 | `gcal-manager.c/.h` | `lib/manager.rb` | ESource/calendar manager, sync | yes |
 | `gcal-range.c/.h` | `lib/range.rb` | date range value type | yes |
 | `gcal-range-tree.c/.h` | `lib/range_tree.rb` | interval tree of ranges | yes |
@@ -138,7 +144,7 @@ fork's `lib/` has 38 files. Of the units below, **23 already exist** in
 | `gcal-quick-add-popover.c/.h` + `.blp` | `lib/quick_add_popover.rb` | "new event" quick-add popover | yes |
 | `gcal-event-popover.c/.h` + `.blp` | `lib/event_popover.rb` | event detail popover | yes |
 | `gcal-event-widget.c/.h` + `.blp` | `lib/event_widget.rb` | event chip/pill drawn on views | yes |
-| `gcal-event-widget-pool.c/.h` | — | recycling pool for event widgets | **no** |
+| `gcal-event-widget-pool.c/.h` | `lib/event_widget_pool.rb` | recycling pool for event widgets | yes (ported in `ed5e9f43`, after this inventory was first written; see `.reports/component-parity.md` — the known `event_widget.rb` double-`build` GTK-CRITICAL this was expected to fix is confirmed, by rerunning the drive script, to still fire) |
 | `gcal-meeting-row.c/.h` + `.blp` | `lib/meeting_row.rb` | "join meeting" row in event popover | yes |
 | `gcal-drop-overlay.c/.h` | — | drag-and-drop ICS file overlay | **no** |
 | `gcal-fading-label.c/.h` | — | label that fades instead of ellipsizing | **no** |

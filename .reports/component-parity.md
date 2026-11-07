@@ -9,13 +9,17 @@ confirm the port.
 ## Headline number
 
 **20 of 62 user-facing components exist on `ruby`. 42 do not exist at all.**
-16 of 28 supporting files exist; 12 do not. These counts come from
-`.reports/component-inventory.md`, re-verified in this pass against
-`git ls-tree -r --name-only origin/main` and `ls lib/` on `ruby`: both counts
-check out exactly (93 `.c`, 96 `.h`, 46 `.blp` upstream; 38 files in `lib/`
-on the port). A component with no file cannot have parity on any axis —
-count parity alone is 20/62 = 32%, before style, behaviour or text are even
-considered.
+18 of 28 supporting files exist (up from 16/28: `lib/global.rb` and
+`lib/event_widget_pool.rb` landed in `ed5e9f43`, after this report's count
+was first taken); 10 do not. Re-verified this pass against
+`git ls-tree -r --name-only origin/main` and `ls lib/` on `ruby`: the file
+counts check out exactly (93 `.c`, 96 `.h`, 46 `.blp` upstream; 33 files in
+`lib/` on the port). A component with no file cannot have parity on any
+axis — count parity alone is 20/62 = 32% for user-facing components, before
+style, behaviour or text are even considered. The two newly-added files are
+both supporting (process-wide globals, an event-widget recycling pool), so
+they move the supporting-file count only; the user-facing 20/62 is
+unchanged this round.
 
 Whole subsystems are 0% ported:
 - **Event editor** (19 files: `event-editor/`): 0 of 19. The port can create
@@ -43,7 +47,17 @@ Whole subsystems are 0% ported:
   it — `component-inventory.md` itself notes "This fills the one empty page
   in the window's view stack" is still future work.
 
-## Confirmed behavioural bug in a component marked "present"
+## Confirmed behavioural bug in a component marked "present" — still reproduces after the supposed fix landed
+
+`ed5e9f43` ("Port gcal-global.c and gcal-event-widget-pool.c") added
+`lib/event_widget_pool.rb` specifically to reuse `EventWidget` instances
+"across rebuilds instead of discarding and recreating them" and wired it
+into `MonthCell`, `MonthPopover` and `AgendaViewDayRow` — exactly the three
+call sites implicated in the double-`build` bug this report first found.
+This pass **reran the drive script against the current `ruby` HEAD
+(`ed5e9f43`) specifically to check whether that fix closed the gap. It did
+not.** The identical `Gtk-CRITICAL` fires the identical four times, from the
+identical origin:
 
 `lib/event_widget.rb` is marked `✓` in the inventory, and it does build and
 is visually shown by the drive run. But running it (`nix develop --command
@@ -68,6 +82,40 @@ it; the drive script's checks do not, because none of them assert "no
 Gtk-CRITICAL was emitted", so this is a real defect in a component the
 inventory marks done, surviving the driver's own notion of green. See
 `.reports/test-parity.md` for the exact drive-run numbers.
+
+## Additional runtime noise this pass found, that was not in the prior report
+
+The same rerun (`ed5e9f43`, full stderr captured this time, not just
+grepped for the one known assertion) surfaces three more problems the 121
+`check()` calls do not look for:
+
+- **`Gtk-CRITICAL **: New application windows must be added after the
+  GApplication::startup signal has been emitted.`** — fires twice during
+  the run. A window is being constructed/added before `startup` completes
+  somewhere in the drive sequence (likely a second `Window.new` the script
+  creates to test multi-instance behaviour at step 53, "the window is still
+  the only toplevel at the end of the run" — but that step passes, so the
+  critical is silently tolerated rather than caught).
+- **Dozens of `Adwaita-WARNING **: AdwToastOverlay ... exceeds
+  AdwApplicationWindow width/size`** — the toast overlay repeatedly requests
+  more width/size than the window provides, through most of the run. This
+  is a real layout defect (something is giving the toast overlay a fixed or
+  unclamped size request) that would be visible on screen as either clipped
+  toasts or an oversized window, and nothing checks for it.
+- **`Gtk-WARNING **: Finalizing GtkButton ..., but it still has children
+  left: - GtkPopover ...`** at the end of the run — a button is being
+  destroyed while still parenting a popover, meaning something is not
+  unparenting the popover before the button that owns it goes away. This is
+  a resource-lifecycle bug, not cosmetic; in a long-running app process
+  (not, how this drive script exits) it is the shape of a leak.
+
+None of these three are mentioned in `.reports/accountability-ensurance.md`
+or `.reports/test-parity.md` as previously written, because the prior pass
+only grepped for the one known `gtk_box_append` assertion rather than
+reading the whole stderr stream. They are real defects in components the
+inventory marks "present," found only by actually running the app and
+reading everything it printed, which is the finding `component-parity`'s
+Step 4/5 exists to force.
 
 ## Three further FAILs the drive script itself reports
 
@@ -118,10 +166,17 @@ samples; the honest status for those 17 is "not checked."
 
 ## Gap summary
 
-- 42/62 user-facing components and 12/28 supporting files: absent outright.
+- 42/62 user-facing components and 10/28 supporting files: absent outright
+  (supporting-file gap narrowed from 12 to 10 this round by `global.rb` and
+  `event_widget_pool.rb` landing — the user-facing 42/62 gap is unchanged).
 - 1 confirmed functional defect in a "present" component (`event_widget.rb`
   double-build / GTK assertion failure), surfaced only by actually running
-  the app, not by reading the code.
+  the app, not by reading the code, and **confirmed still present after a
+  commit that was specifically written to fix it**.
+- 3 new runtime defects (two `GApplication::startup` criticals, repeated
+  `AdwToastOverlay` oversize warnings, one `GtkButton` finalized-with-child
+  warning) found this round by reading the whole stderr stream instead of
+  grepping for the one previously-known assertion.
 - 3 confirmed behavioural failures in `window.rb`'s breakpoint handling,
   reported by the port's own drive script.
 - 17 of 20 present components: not checked against upstream source in this

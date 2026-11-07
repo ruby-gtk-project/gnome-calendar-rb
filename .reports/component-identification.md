@@ -45,12 +45,24 @@ their component-level identity (CSS classes, exact signal set) is therefore
 **unverified**, not confirmed. Full identification would require going
 through each file the way the three samples were.
 
+## Reverified this round
+
+Current HEAD is `ed5e9f43`, two commits past this document's prior count.
+`lib/global.rb` and `lib/event_widget_pool.rb` now exist (ported in
+`ed5e9f43`); both are supporting files, so the 42/62 user-facing gap below
+is unchanged and the supporting-file gap narrows from 12/28 to 10/28. The
+event-widget double-`build` defect flagged below was the specific thing
+`event_widget_pool.rb` was written to fix — this round's rerun of the drive
+script confirms it still fires identically (see `.reports/component-parity.md`
+and `.reports/test-parity.md`), so `event_widget_pool.rb` existing is not
+evidence the identification finding below is closed.
+
 ## Components present upstream with zero file created on `ruby`
 
-42 of 62 user-facing components and 12 of 28 supporting files have no
+42 of 62 user-facing components and 10 of 28 supporting files have no
 corresponding `lib/*.rb` file at all, so there is nothing to identify on the
 port side for them: `calendar_combo_row`, `month_view_row`, `week_view`,
-`week_header`, `week_grid`, `week_hour_bar`, `event_widget_pool`,
+`week_header`, `week_grid`, `week_hour_bar`,
 `search_button`, `calendar_navigation_button`, `weather_settings`,
 `drop_overlay`, `fading_label`, `overflow_bin`, `bidi`, the entire
 event-editor directory (19 files), the entire calendar-management directory

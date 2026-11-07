@@ -3,6 +3,13 @@
 Per the `translation-parity` skill: parity requires the same (msgctxt,
 msgid) key set, byte-identical, plus the same languages shipped and built.
 
+**Reverified this round** (HEAD `ed5e9f43`, two commits past where this
+report was first written): `find . -iname 'po' -o -iname '*.pot' -o -iname
+'*.mo'`, `grep -rn gettext lib exe`, and `grep -rln '_(' lib exe` all still
+return nothing. Neither `global.rb` nor `event_widget_pool.rb` (the two
+files added since) introduces any string marking. The 0% figure below is
+unchanged and confirmed current, not carried forward unchecked.
+
 ## Upstream
 
 `git show origin/main:po/POTFILES.in` lists 72 source files that contribute

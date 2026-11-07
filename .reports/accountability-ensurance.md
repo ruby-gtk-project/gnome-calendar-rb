@@ -28,7 +28,25 @@ own that this is this agent's judgment call, stated as such, not a
 pre-approved scope boundary. Flagging it here so the next reader does not
 inherit it as settled.
 
-## Finding 2 — the runtime gate handed to this audit is false
+## Finding 2 — the runtime gate handed to this audit is false, again, for a second round
+
+**Update for this round:** the task brief handed to this round of the audit
+repeats the identical claim with one number changed: "The runtime gate this
+round: drive_ok=true, 121 checks passed, 0 failed, covering 39 components"
+(previously 26 components). Current HEAD is `ed5e9f43`, two commits past
+where this finding was first written. This audit reran the drive script
+again, from scratch, against that HEAD, before writing anything, and the
+result is byte-for-byte the same failure as last round — same 118/121, same
+three named failures. **A false green was handed to this audit a second
+time, after the first audit already reported it false in writing and
+pushed that report to the same branch this brief was generated from.**
+Whatever produces "0 failed" either does not read `.reports/test-parity.md`
+or does not rerun the script at all; either way, the fix is not "trust it
+less" but "never trust it, every round, and rerun it yourself" — which is
+what this audit did, again:
+
+Original finding text, still true, now confirmed twice over two separate
+audit rounds two commits apart:
 
 The task brief for this audit stated: "The runtime gate this round:
 drive_ok=true, 121 checks passed, 0 failed, covering 26 components." This
@@ -87,11 +105,36 @@ property checks, none of which is "nothing exploded"). See
   components remain," "0 of 7," with no softening language — Finding 1 is
   the one exception in an otherwise plainly-written document.
 
+## Finding 4 (new this round) — a "fix" commit landed and the defect it targeted was never reverified
+
+`ed5e9f43`'s commit message says `EventWidgetPool` was wired into
+`MonthCell`, `MonthPopover` and `AgendaViewDayRow` — the three call sites
+`component-parity.md` named as the double-`build` bug's origin — but
+nothing in that commit, in `.reports/`, or anywhere else in the repository
+records whether the drive script was rerun afterward to confirm the fix
+actually closed the gap it was aimed at. This audit reran it: the identical
+`Gtk-CRITICAL` fires the identical four times (see
+`.reports/component-parity.md`). No document claimed this was fixed — so
+this is not a false-green claim the way Finding 2 is — but shipping a
+targeted fix commit with no verification that it worked, on a known and
+previously-reported defect, is the same failure one step earlier: writing
+code that addresses a report's wording ("reuses EventWidget instances
+across rebuilds") without checking it addresses the report's actual
+finding (a specific assertion at a specific line, reproducible by running
+one script).
+
 ## Verdict
 
-Two real accountability failures: one phrase in the existing inventory that
-frames an exclusion as settled rather than owned, and — far more serious —
-a runtime gate this audit was handed that is false on rerun. The second one
+Three real accountability failures, one of them now confirmed across two
+separate audit rounds: one phrase in the existing inventory that frames an
+exclusion as settled rather than owned; a runtime gate this audit was
+handed that is false on rerun, for a second round running, after the first
+round's finding of exactly this was already written down and pushed to
+this branch; and a fix commit whose target defect was never reverified and
+is confirmed, this round, to still reproduce unchanged. The second finding
 alone means `clean: true` cannot be reported for this round regardless of
 what the other four reports show, because the premise this audit was asked
-to confirm against ("the runtime gate passed") is itself the false claim.
+to confirm against ("the runtime gate passed") is itself the false claim —
+and it is now false for the second consecutive round, which is worse than
+the first occurrence: it means whatever is generating that gate number is
+not reading, or not acting on, the reports this exact workflow produces.

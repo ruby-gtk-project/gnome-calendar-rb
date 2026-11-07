@@ -98,6 +98,21 @@ contradicts the runtime gate this audit was handed (`drive_ok=true, 121
 checks passed, 0 failed`) — that claim does not hold under an actual rerun
 in this session, on this checkout, right now. The three failures:
 
+**Rerun again for this round**, at current HEAD `ed5e9f43` (two more
+commits landed since the last time this file was written: an inventory
+update and `global.rb`/`event_widget_pool.rb`), because this round's task
+brief repeats the same claim with different cosmetic numbers:
+`drive_ok=true, 121 checks passed, 0 failed, covering 39 components`.
+**Same result, same three failures, same count of 121, still 3 failed.**
+Two things are worth flagging about that specific repetition: (1) the
+check count did not change (121 both rounds) despite the brief's own
+"components covered" figure moving from 26 to 39, which is itself odd if
+the component count genuinely drove the check count; and (2) the false
+"0 failed" claim was handed to this audit a second time, after the first
+audit already reported it false and in writing. Whatever produces this
+gate value is not reading the last audit's output, or is not rerunning the
+script at all. The three failures, unchanged:
+
 ```
 failed check: the narrow switcher is in the bin
 failed check: the main window never collapsed
@@ -109,8 +124,17 @@ All three are in the breakpoint-collapse behaviour of `lib/window.rb`
 assertion failure (`gtk_box_append: assertion 'gtk_widget_get_parent (child)
 == NULL' failed`) four times, originating in `lib/event_widget.rb:37-48`
 during `Window#show_event`, that none of the 121 checks catch because none
-of them assert "no critical/warning was logged." See
-`.reports/component-parity.md` for the mechanism.
+of them assert "no critical/warning was logged" — and this persists
+unchanged even though `ed5e9f43` added `lib/event_widget_pool.rb`
+specifically to fix the double-build this assertion reports. This round's
+rerun also surfaces, reading the full stderr instead of grepping for the
+one known line: two `New application windows must be added after the
+GApplication::startup signal has been emitted` criticals, repeated
+`AdwToastOverlay ... exceeds AdwApplicationWindow width/size` warnings
+through most of the run, and one `Finalizing GtkButton ..., but it still
+has children left: - GtkPopover` warning near the end. See
+`.reports/component-parity.md` for the mechanism and full detail on all of
+these.
 
 `rspec` was not run separately because there is nothing under `spec/` for
 it to run; `rake spec` would report 0 examples, 0 failures — a suite that
@@ -127,7 +151,11 @@ gap, distinct from "exists but unrun."
   script — fails 3 of 121 checks on an actual run in this session, and
   surfaces a live GTK assertion failure the checks don't even look for.
   The runtime gate this audit was given (121/0) is contradicted by rerunning
-  it: do not trust a green claim without rerunning it yourself.
+  it, **for the second audit round in a row**, with the same 121/3-failed
+  result both times despite the brief's claimed "components covered"
+  number moving between rounds: do not trust a green claim without
+  rerunning it yourself, and do not trust it more just because a later
+  round repeats it.
 
 This is not test parity. It is the near-total absence of ported tests, with
 a UI driver that half-covers four model files by accident and currently
