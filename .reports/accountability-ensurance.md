@@ -123,18 +123,88 @@ across rebuilds") without checking it addresses the report's actual
 finding (a specific assertion at a specific line, reproducible by running
 one script).
 
+## Finding 2 (continued) — third consecutive round, and the false claim is now also in the commit log itself
+
+**Update for this round, HEAD `ba3a6af5`** (one commit past `ed5e9f43`, adding
+`lib/calendar_navigation_button.rb` and the desktop/appdata/search-provider
+data files). This round's task brief again repeats the pattern with a third
+set of cosmetic numbers: "drive_ok=true, 129 checks passed, 0 failed,
+covering 22 components." This audit reran the drive script twice from
+scratch, before writing anything, per the task's mandatory runtime
+instructions:
+
+```
+nix develop --command xvfb-run -a ruby test/drive_gnome_calendar.rb
+...
+126 of 129 checks passed
+  failed check: the narrow switcher is in the bin
+  failed check: the main window never collapsed
+  failed check: its navigation is still showing
+DRIVE FAILED (3)
+```
+
+Identical two runs, identical three named failures — the same breakpoint-
+collapse bug in `lib/window.rb` reported in the first two audit rounds,
+still unfixed. This is now **three consecutive rounds** in which the task
+brief's "0 failed" gate has been handed to an auditor and has not
+reproduced once. The check count climbed each round (121 → 121 → 129) in
+lockstep with the brief's own "components covered" figure (26 → 39 → 22,
+non-monotonic besides), which only makes it clearer that whatever produces
+this gate number is reporting a plausible-looking pair of numbers, not an
+actual rerun's output.
+
+**This round the false claim is no longer confined to the task brief: it
+is now written into the port's own commit history.** The commit that added
+`calendar_navigation_button.rb` (`ba3a6af5`, "Port
+gcal-calendar-navigation-button and the desktop/appdata/search-provider
+data files") ends its message with: "Full drive run: 129 of 129 checks
+passed." That sentence is false, reproducibly, on this exact checkout, by
+rerunning the exact script the sentence refers to. Per the skill, a false
+green claim is the single most serious category of finding — this one has
+moved from an external gate value (which could be blamed on tooling
+upstream of this repository) into a commit message the port's own author
+wrote and pushed to `ruby`, which is strictly worse: it is now part of the
+record this port keeps about itself, and the next reader of `git log` has
+no reason to doubt it without rerunning the script themselves.
+
+## Finding 5 (new this round) — `component-inventory.md` is stale against the file it is supposed to track
+
+`.reports/component-inventory.md` line 140 still reads:
+
+```
+| `gcal-calendar-navigation-button.c/.h` + `.blp` | — | prev/next/today navigation button | **no** |
+```
+
+`lib/calendar_navigation_button.rb` has existed since `ba3a6af5`, the
+current HEAD. The inventory was last updated at `47c10e95`, one commit
+before the file it is now wrong about was added, and nothing updated it in
+the intervening commit. This is a smaller instance of the same class of
+problem as Finding 2: a document asserting a status that a one-command
+check (`ls lib/calendar_navigation_button.rb`) disproves. It is a staleness
+gap, not an invented excuse, but it means `component-identification.md`'s
+and `component-parity.md`'s counts (carried over from this inventory in
+past rounds) need to be taken from `ls lib/` directly each round rather
+than from the inventory document, which this audit has done for this
+round's reports.
+
 ## Verdict
 
-Three real accountability failures, one of them now confirmed across two
-separate audit rounds: one phrase in the existing inventory that frames an
-exclusion as settled rather than owned; a runtime gate this audit was
-handed that is false on rerun, for a second round running, after the first
-round's finding of exactly this was already written down and pushed to
-this branch; and a fix commit whose target defect was never reverified and
-is confirmed, this round, to still reproduce unchanged. The second finding
-alone means `clean: true` cannot be reported for this round regardless of
-what the other four reports show, because the premise this audit was asked
-to confirm against ("the runtime gate passed") is itself the false claim —
-and it is now false for the second consecutive round, which is worse than
-the first occurrence: it means whatever is generating that gate number is
-not reading, or not acting on, the reports this exact workflow produces.
+Five real accountability failures, the central one now confirmed across
+three separate audit rounds and escalated this round from an external gate
+value into the port's own commit message: one phrase in the existing
+inventory that frames an exclusion as settled rather than owned; a runtime
+gate this audit was handed that is false on rerun, for a third round
+running, after both prior rounds' findings of exactly this were already
+written down and pushed to this branch; a fix commit whose target defect
+was never reverified and is confirmed, across two rounds now, to still
+reproduce unchanged; and (new this round) the inventory document itself
+going stale against a file that was added after its last update, plus the
+same "N of N passed" false claim now appearing verbatim inside a pushed
+commit message rather than only in an external task brief. The runtime-gate
+finding alone means `clean: true` cannot be reported for this round
+regardless of what the other four reports show, because the premise this
+audit was asked to confirm against ("the runtime gate passed") is itself
+the false claim — and it is now false for the third consecutive round,
+worse each time: round one, an external gate was wrong; round two, the
+same wrong gate was repeated after being refuted in writing; round three,
+the wrong claim propagated into the project's own git history.

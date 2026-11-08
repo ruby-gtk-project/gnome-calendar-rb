@@ -57,13 +57,27 @@ script confirms it still fires identically (see `.reports/component-parity.md`
 and `.reports/test-parity.md`), so `event_widget_pool.rb` existing is not
 evidence the identification finding below is closed.
 
+## Reverified again this round
+
+Current HEAD is `ba3a6af5`, one commit past `ed5e9f43`.
+`lib/calendar_navigation_button.rb` now exists (ported in `ba3a6af5`), a
+user-facing component, narrowing the user-facing gap from 42/62 to 41/62.
+It was not opened widget-by-widget against
+`gcal-calendar-navigation-button.c`/`.blp` in this pass; its identification
+status is therefore the same "present but unverified below the file level"
+as the other 17 non-sampled present files, not a fourth sample. Also note:
+`.reports/component-inventory.md` line 140 still marks this file **no** —
+stale against this HEAD; do not rely on that document's per-file column
+without cross-checking `ls lib/` (see
+`.reports/accountability-ensurance.md` Finding 5).
+
 ## Components present upstream with zero file created on `ruby`
 
-42 of 62 user-facing components and 10 of 28 supporting files have no
+41 of 62 user-facing components and 10 of 28 supporting files have no
 corresponding `lib/*.rb` file at all, so there is nothing to identify on the
 port side for them: `calendar_combo_row`, `month_view_row`, `week_view`,
 `week_header`, `week_grid`, `week_hour_bar`,
-`search_button`, `calendar_navigation_button`, `weather_settings`,
+`search_button`, `weather_settings`,
 `drop_overlay`, `fading_label`, `overflow_bin`, `bidi`, the entire
 event-editor directory (19 files), the entire calendar-management directory
 (7 files), the entire importer directory (3 files), `source_discoverer`,
@@ -76,8 +90,8 @@ not partially-identified; they are wholly absent. See
 ## Gap
 
 Component identification on the Ruby side is incomplete below the file
-level for the 20 files that exist, and nonexistent for the 42 user-facing
-components and 12 supporting files that were never created. I did not do the
+level for the 21 files that exist, and nonexistent for the 41 user-facing
+components and 10 supporting files that were never created. I did not do the
 full per-widget identification for every present file in the time this audit
 took; three samples is not full coverage, and I am reporting that
 incompleteness rather than extrapolating a pass from three files.

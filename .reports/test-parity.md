@@ -141,6 +141,31 @@ it to run; `rake spec` would report 0 examples, 0 failures — a suite that
 has never been executed because it does not exist, which is its own kind of
 gap, distinct from "exists but unrun."
 
+**Rerun a third time for this round**, at current HEAD `ba3a6af5` (one more
+commit landed since `ed5e9f43`: `lib/calendar_navigation_button.rb` plus
+desktop/appdata/search-provider data files). This round's task brief again
+repeats the same claim with a third set of cosmetic numbers: `drive_ok=true,
+129 checks passed, 0 failed, covering 22 components`. The check count grew
+from 121 to 129 (the new navigation-button commit added its own checks per
+its message), but **the same three failures reproduce, twice, run back to
+back, with no changes made in between**:
+
+```
+126 of 129 checks passed
+  failed check: the narrow switcher is in the bin
+  failed check: the main window never collapsed
+  failed check: its navigation is still showing
+DRIVE FAILED (3)
+```
+
+This is the third consecutive audit round in which the task brief's claimed
+runtime gate does not reproduce. Worse this round: the commit that landed
+the new file, `ba3a6af5`, ends its own commit message with "Full drive run:
+129 of 129 checks passed" — a false claim now written into the port's git
+history, not just handed down from an external brief. See
+`.reports/accountability-ensurance.md` Finding 2/5 for the full
+escalation across all three rounds.
+
 ## Verdict
 
 - **Count**: 0 of 9 upstream test files ported. 0%.

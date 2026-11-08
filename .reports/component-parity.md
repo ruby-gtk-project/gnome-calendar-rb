@@ -8,18 +8,20 @@ confirm the port.
 
 ## Headline number
 
-**20 of 62 user-facing components exist on `ruby`. 42 do not exist at all.**
-18 of 28 supporting files exist (up from 16/28: `lib/global.rb` and
-`lib/event_widget_pool.rb` landed in `ed5e9f43`, after this report's count
-was first taken); 10 do not. Re-verified this pass against
-`git ls-tree -r --name-only origin/main` and `ls lib/` on `ruby`: the file
-counts check out exactly (93 `.c`, 96 `.h`, 46 `.blp` upstream; 33 files in
-`lib/` on the port). A component with no file cannot have parity on any
-axis — count parity alone is 20/62 = 32% for user-facing components, before
-style, behaviour or text are even considered. The two newly-added files are
-both supporting (process-wide globals, an event-widget recycling pool), so
-they move the supporting-file count only; the user-facing 20/62 is
-unchanged this round.
+**21 of 62 user-facing components exist on `ruby`, as of HEAD `ba3a6af5`
+(one commit past `ed5e9f43`, adding `lib/calendar_navigation_button.rb`).
+41 do not exist at all.** 18 of 28 supporting files exist; 10 do not —
+unchanged this round, since the new file is user-facing, not supporting.
+Re-verified this pass against `git ls-tree -r --name-only origin/main` and
+`ls lib/` on `ruby`: 93 `.c`, 96 `.h`, 46 `.blp` upstream; 43 files in `lib/`
+on the port. A component with no file cannot have parity on any axis —
+count parity alone is 21/62 = 34% for user-facing components, before style,
+behaviour or text are even considered.
+
+Note: `.reports/component-inventory.md` line 140 still marks
+`gcal-calendar-navigation-button.c/.h`+`.blp` as **no** — that line is
+stale as of this HEAD and should not be trusted over `ls lib/`; see
+`.reports/accountability-ensurance.md` Finding 5.
 
 Whole subsystems are 0% ported:
 - **Event editor** (19 files: `event-editor/`): 0 of 19. The port can create
@@ -46,6 +48,14 @@ Whole subsystems are 0% ported:
   exercises (`win.change-view`) has a week destination with nothing behind
   it — `component-inventory.md` itself notes "This fills the one empty page
   in the window's view stack" is still future work.
+
+`lib/calendar_navigation_button.rb` (new this round) was not spot-checked
+line-by-line against `gcal-calendar-navigation-button.c`/`.blp` in this
+pass — it is counted as present because the file exists and the drive
+script's new checks (active in month view, swaps to a static heading in
+agenda view) pass, but that is two behavioural assertions, not a four-axis
+check. Treat it the same as the other 17 unchecked presents below: existing
+and passing its own narrow test, not independently verified.
 
 ## Confirmed behavioural bug in a component marked "present" — still reproduces after the supposed fix landed
 
@@ -119,15 +129,23 @@ Step 4/5 exists to force.
 
 ## Three further FAILs the drive script itself reports
 
-The driver run on this pass printed:
+The driver run on this pass (reran twice at current HEAD `ba3a6af5`, same
+result both times) printed:
 
 ```
-118 of 121 checks passed
+126 of 129 checks passed
   failed check: the narrow switcher is in the bin
   failed check: the main window never collapsed
   failed check: its navigation is still showing
 DRIVE FAILED (3)
 ```
+
+These are the identical three failures this report has now found across
+three audit rounds and three different HEADs (`ed5e9f43` → `ed5e9f43` →
+`ba3a6af5`); the check count grew from 121 to 129 but the failing set did
+not change. The task brief for this round again claimed `drive_ok=true,
+129 checks passed, 0 failed` — false, reproducibly. See
+`.reports/accountability-ensurance.md` and `.reports/test-parity.md`.
 
 These are breakpoint-collapse behaviours in `lib/window.rb` (steps 35 and
 38 of the drive script) — the narrow-width switcher does not end up in the
@@ -166,9 +184,10 @@ samples; the honest status for those 17 is "not checked."
 
 ## Gap summary
 
-- 42/62 user-facing components and 10/28 supporting files: absent outright
-  (supporting-file gap narrowed from 12 to 10 this round by `global.rb` and
-  `event_widget_pool.rb` landing — the user-facing 42/62 gap is unchanged).
+- 41/62 user-facing components and 10/28 supporting files: absent outright
+  (user-facing gap narrowed from 42 to 41 this round by
+  `calendar_navigation_button.rb` landing, unchecked against upstream
+  source beyond the drive script's two new assertions).
 - 1 confirmed functional defect in a "present" component (`event_widget.rb`
   double-build / GTK assertion failure), surfaced only by actually running
   the app, not by reading the code, and **confirmed still present after a

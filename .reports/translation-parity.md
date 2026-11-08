@@ -3,12 +3,24 @@
 Per the `translation-parity` skill: parity requires the same (msgctxt,
 msgid) key set, byte-identical, plus the same languages shipped and built.
 
-**Reverified this round** (HEAD `ed5e9f43`, two commits past where this
-report was first written): `find . -iname 'po' -o -iname '*.pot' -o -iname
-'*.mo'`, `grep -rn gettext lib exe`, and `grep -rln '_(' lib exe` all still
-return nothing. Neither `global.rb` nor `event_widget_pool.rb` (the two
-files added since) introduces any string marking. The 0% figure below is
-unchanged and confirmed current, not carried forward unchecked.
+**Reverified again this round** (HEAD `ba3a6af5`, one commit past
+`ed5e9f43`): `find . -iname 'po' -o -iname '*.pot' -o -iname '*.mo'`,
+`grep -rn gettext lib exe`, and `grep -rln '_(' lib exe` all still return
+nothing of substance. `grep -rln '_(' lib` does match
+`lib/calendar_navigation_button.rb` once, but it is a false positive — a
+code comment quoting upstream's `g_date_time_format` call
+(`_("%OB %Y")`), not a Ruby gettext call or `_()` marking convention; the
+file defines no translation marking of its own. The new desktop/appdata/
+search-provider data files added in this same commit
+(`data/org.gnome.CalendarRb.desktop`,
+`data/appdata/org.gnome.CalendarRb.metainfo.xml`,
+`data/org.gnome.CalendarRb.search-provider.ini`) are themselves
+translatable surfaces upstream ships via `po/POTFILES.in` (the `.desktop`
+and metainfo entries) — none of the three has any `[de]`/`[ja]`/etc.
+translated-field block or `translate="yes"` convention; they ship
+English-only strings with no extraction mechanism, same as the rest of the
+port. The 0% figure below is unchanged and confirmed current, not carried
+forward unchecked.
 
 ## Upstream
 
