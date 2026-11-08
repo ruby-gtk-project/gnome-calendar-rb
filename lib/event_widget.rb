@@ -29,7 +29,21 @@ class EventWidget
     @color_class = nil
   end
 
+  # Assembles the widget tree once; a second call (EventWidgetPool handing
+  # this same instance back out, or window.rb's show_event reaching for
+  # `.widget` on one that is already on screen) is a no-op that just
+  # refreshes the labels, rather than re-appending children GTK has already
+  # parented — which is what used to fire the "tried to add a child to
+  # already-parented widget" Gtk-CRITICAL once per click.
   def build
+    unless @assembled
+      @assembled = assemble
+    end
+    refresh
+    button
+  end
+
+  def assemble
     button.tap do |widget|
       widget.child = content_box
 
@@ -52,8 +66,6 @@ class EventWidget
       widget.signal_connect('clicked') do
         @activate_handlers.each { |handler| handler.call(@event, self) }
       end
-
-      refresh
     end
   end
 

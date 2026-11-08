@@ -137,7 +137,7 @@ in `ebee87e6`); every other row's existence is unchanged from the prior pass.
 | Upstream file | `lib/*.rb` target | Kind | Exists? |
 |---|---|---|---|
 | `gcal-calendar-list.c/.h` + `.blp` | `lib/calendar_list.rb` | sidebar list of calendars | yes (gained a read-only row group for system/GOA sources discovered via `edataserver`, and a "subscribe from URL" row that imports via `soup3`, both in `ebee87e6`) |
-| `gcal-calendar-navigation-button.c/.h` + `.blp` | — | prev/next/today navigation button | **no** |
+| `gcal-calendar-navigation-button.c/.h` + `.blp` | `lib/calendar_navigation_button.rb` | prev/next/today navigation button | yes |
 | `gcal-sync-indicator.c/.h` + `.blp` | `lib/sync_indicator.rb` | header-bar sync spinner | yes |
 | `gcal-quick-add-popover.c/.h` + `.blp` | `lib/quick_add_popover.rb` | "new event" quick-add popover | yes |
 | `gcal-event-popover.c/.h` + `.blp` | `lib/event_popover.rb` | event detail popover | yes |

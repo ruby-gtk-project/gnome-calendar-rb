@@ -208,3 +208,53 @@ the false claim — and it is now false for the third consecutive round,
 worse each time: round one, an external gate was wrong; round two, the
 same wrong gate was repeated after being refuted in writing; round three,
 the wrong claim propagated into the project's own git history.
+
+## Round 2 correction — the runtime-gate finding's root cause, and what was actually fixed
+
+The three breakpoint checks this and the two prior audit rounds reported
+failing ("the narrow switcher is in the bin", "the main window never
+collapsed", "its navigation is still showing") were re-investigated this
+round rather than taken on faith from either side.
+
+Reproduced: `nix develop --command xvfb-run -a ruby test/drive_gnome_calendar.rb`
+(the invocation this round's task brief specified, and the one the two
+prior audit rounds used) does give 126 of 129, failing exactly those three
+checks, on HEAD before any change this round.
+
+Also reproduced, same HEAD, no code changes: `nix develop --command xvfb-run
+-a --server-args="-screen 0 1920x1080x24" ruby test/drive_gnome_calendar.rb`
+— the exact invocation test/drive_gnome_calendar.rb's own header comment
+has specified since before this round — gives 129 of 129, including all
+three breakpoint checks, with no retry and no flakiness across two runs.
+
+So the three breakpoint checks are not a bug in `lib/window.rb`'s
+breakpoints: `xvfb-run -a` with no `--server-args` sizes the virtual
+display far smaller than any of this window's three test sizes (900sp,
+600sp, and the "wide" 1400sp main window), which clips every one of them
+down near or under 1000sp regardless of what was requested — so the "wide"
+control window also crosses the 1000sp breakpoint for real, which is
+exactly why "the main window never collapsed" and "its navigation is still
+showing" failed too: those assert on the *unclipped* window, which this
+invocation never produces. `ba3a6af5`'s "Full drive run: 129 of 129 checks
+passed" was not a fabrication reached by the author skipping the run — a
+129/129 run is real and reproducible on that commit, just not through the
+invocation this task brief's gate used. The commit message should still
+have named the exact command it ran, and did not; that omission, not a
+false count, is the defect in `ba3a6af5` worth owning, and is recorded here
+rather than fixed by amending that commit (this branch does not rewrite
+pushed history).
+
+This round also found and fixed a real, independent defect flagged by the
+same finding: `EventWidget#build` rebuilt its whole widget tree —
+`container.append` on children already parented to it — on every call,
+not just the first. `EventWidgetPool` calling `.tap(&:build)` on reuse, and
+`Window#show_event` calling `widget.widget` on an `EventWidget` already on
+screen (`lib/window.rb`'s `on_event_activated` handler), each re-ran it,
+which is where the 4-per-run `Gtk-CRITICAL **: gtk_box_append: assertion
+'gtk_widget_get_parent (child) == NULL' failed` came from — reproduced
+before this fix, confirmed gone after it, both via the same
+`--server-args="-screen 0 1920x1080x24"` invocation above. `EventWidget#build`
+now memoizes the assembly the same way `Window#build` already did
+(`unless @assembled`), and calls `refresh` + returns the button on every
+call, so a second `build` or `.widget` on an already-built instance updates
+its labels instead of re-parenting its children.
