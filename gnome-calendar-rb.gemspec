@@ -96,12 +96,11 @@ Gem::Specification.new do |spec|
   spec.executables = ["gnome-calendar"]
   spec.require_paths = ["lib"]
 
-  # Runtime toolkit and bindings
-  spec.add_dependency("gtk4", "~> 4.3")
   spec.add_dependency("adwaita", "~> 4.3")
-  spec.add_dependency("glib2", "~> 4.3")
   spec.add_dependency("ashpd", "~> 0.1")        # portals (file chooser, background)
   spec.add_dependency("edataserver", "~> 1.0")  # EDataServer: calendar/address-book sources
+  spec.add_dependency("glib2", "~> 4.3")
+  spec.add_dependency("gtk4", "~> 4.3")
   spec.add_dependency("libgweather", "~> 1.0")  # GWeather: the weather forecast in month cells
   spec.add_dependency("soup3", "~> 1.0")        # Soup: HTTP for web calendar discovery
 

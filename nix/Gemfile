@@ -9,9 +9,9 @@
 source "https://rubygems.org"
 
 gem "adwaita"
-gem "gtk4"
-gem "glib2"
 gem "ashpd"
 gem "edataserver"
+gem "glib2"
+gem "gtk4"
 gem "libgweather"
 gem "soup3"
